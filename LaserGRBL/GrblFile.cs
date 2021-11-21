@@ -110,12 +110,12 @@ namespace LaserGRBL
 
 			mRange.ResetRange();
 
-			SvgConverter.GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
-			converter.GCodeXYFeed = Settings.GetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", 1000);
-			converter.UseLegacyBezier = !Settings.GetObject($"Vector.UseSmartBezier", true);
+			//converter.GCodeXYFeed = Settings.GetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", 1000);
+			//converter.UseLegacyBezier = !Settings.GetObject($"Vector.UseSmartBezier", true);
 
-			string gcode = converter.convertFromFile(filename, core);
-			string[] lines = gcode.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+			SvgConverter.GCodeFromSvg.ConvertFromFile(filename, null, null);
+			
+			string[] lines = SvgConverter.Graphic.GCode.ToString().Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 			foreach (string l in lines)
 			{
 				string line = l;
@@ -1023,16 +1023,16 @@ namespace LaserGRBL
 				content = Autotrace.BitmapToSvgString(bmp, useCornerThreshold, cornerThreshold, useLineThreshold, lineThreshold);
 			}
 			catch (Exception ex) { Logger.LogException("Centerline", ex); }
-
-			SvgConverter.GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
+			/*
+			SvgConverter. converter = new SvgConverter.GCodeFromSVG();
 			converter.GCodeXYFeed = Settings.GetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", 1000);
 			converter.SvgScaleApply = true;
 			converter.SvgMaxSize = (float)Math.Max(bmp.Width / 10.0, bmp.Height / 10.0);
 			converter.UserOffset.X = Settings.GetObject("GrayScaleConversion.Gcode.Offset.X", 0F);
 			converter.UserOffset.Y = Settings.GetObject("GrayScaleConversion.Gcode.Offset.Y", 0F);
 			converter.UseLegacyBezier = !Settings.GetObject($"Vector.UseSmartBezier", true);
-
-			string gcode = converter.convertFromText(content, core);
+			*/
+			string gcode = "";/*converter.convertFromText(content, core);*/
 			string[] lines = gcode.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 			foreach (string l in lines)
 			{

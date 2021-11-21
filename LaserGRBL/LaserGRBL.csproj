@@ -87,6 +87,13 @@
     <StartupObject>LaserGRBL.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AForge.Math">
+      <HintPath>SvgConverter\AForge.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog">
+      <HintPath>SvgConverter\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -133,7 +140,41 @@
     <Compile Include="Core\VigoCore.cs" />
     <Compile Include="CsPotrace\PotraceClipper.cs" />
     <Compile Include="Logger\AsyncLogFile.cs" />
+    <Compile Include="Properties\Settings.Designer.cs" />
+    <Compile Include="Properties\Settings1.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="SvgConverter\BezierTools.cs" />
+    <Compile Include="SvgConverter\ControlHeightMap.cs" />
+    <Compile Include="SvgConverter\GCode2DViewpaths.cs" />
+    <Compile Include="SvgConverter\GCodeAnalyze.cs" />
+    <Compile Include="SvgConverter\GCodeFromSVG.cs" />
+    <Compile Include="SvgConverter\GCodeParser.cs" />
+    <Compile Include="SvgConverter\GCodeSimulate.cs" />
+    <Compile Include="SvgConverter\GCodeSynthesize.cs" />
+    <Compile Include="SvgConverter\GCodeTransform.cs" />
+    <Compile Include="SvgConverter\GCodeVisuAndTransform.cs" />
+    <Compile Include="SvgConverter\GCodeVisuWorker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SvgConverter\Graphic2GCode.cs" />
+    <Compile Include="SvgConverter\Graphic2GCodeRelated.cs" />
+    <Compile Include="SvgConverter\GraphicClasses.cs" />
+    <Compile Include="SvgConverter\GraphicCollectData.cs" />
+    <Compile Include="SvgConverter\GraphicGenerateHatchFill.cs" />
+    <Compile Include="SvgConverter\GraphicGenerateMisc.cs" />
+    <Compile Include="SvgConverter\GraphicGenerateSpecial.cs" />
+    <Compile Include="SvgConverter\GraphicGenerateTangential.cs" />
+    <Compile Include="SvgConverter\GraphicWorker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SvgConverter\GrblRelated.cs" />
+    <Compile Include="SvgConverter\ImportMath.cs" />
+    <Compile Include="SvgConverter\MainFormObjects.cs" />
+    <Compile Include="SvgConverter\ToolTable.cs" />
+    <Compile Include="SvgConverter\XmlMarker.cs" />
     <Compile Include="Telegram.cs" />
     <Compile Include="Tools\DataProtector.cs" />
     <Compile Include="Tools\Json.cs" />
@@ -192,7 +233,6 @@
     <Compile Include="SvgConverter\ConvertSizeAndOptionForm.Designer.cs">
       <DependentUpon>ConvertSizeAndOptionForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="SvgConverter\GCodeFromSVG.cs" />
     <Compile Include="SvgConverter\gcodeRelated.cs" />
     <Compile Include="SvgConverter\SvgModeForm.cs">
       <SubType>Form</SubType>
@@ -778,6 +818,10 @@
       <DependentUpon>DiscoveryForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="CSV\setting_codes.ortur.v1.5.x.csv" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings1.Designer.cs</LastGenOutput>
+    </None>
     <None Include="Resources\flag_greece.png" />
     <Content Include="Sound\connect.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

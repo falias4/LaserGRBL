@@ -5,6 +5,7 @@
 // You should have received a copy of the GPLv3 General Public License  along with this program; if not, write to the Free Software  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,  USA. using System;
 
 using LaserGRBL.PSHelper;
+using Svg;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -38,7 +39,9 @@ namespace LaserGRBL.SvgConverter
         {
             using (SvgToGCodeForm f = new SvgToGCodeForm(core, filename, append))
             {
-                f.ShowDialogForm(parent);
+				
+
+				f.ShowDialogForm(parent);
                 if (f.DialogResult == DialogResult.OK)
                 {
                     Settings.SetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", f.IIBorderTracing.CurrentValue);
@@ -62,9 +65,18 @@ namespace LaserGRBL.SvgConverter
 
 			LblSmin.Visible = LblSmax.Visible = IIMaxPower.Visible = IIMinPower.Visible = BtnModulationInfo.Visible = supportPWM;
 			AssignMinMaxLimit();
-
 			CBLaserON.Items.Add(LaserOptions[0]);
 			CBLaserON.Items.Add(LaserOptions[1]);
+
+			LoadSvgAdjuster(filename);
+		}
+
+		private void LoadSvgAdjuster(string filename)
+        {
+			wbSvgViewer.Url = new Uri($"file://" + filename);
+			var mySvg = SvgDocument.Open(filename);
+			
+
 		}
 
 		private void AssignMinMaxLimit()
