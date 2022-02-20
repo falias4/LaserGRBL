@@ -6,7 +6,10 @@
 
 using LaserGRBL.PSHelper;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+
+using System.Linq;
 using System.Windows.Forms;
 
 namespace LaserGRBL.SvgConverter
@@ -17,9 +20,11 @@ namespace LaserGRBL.SvgConverter
 	public partial class SvgToGCodeForm : Form
 	{
 		GrblCore mCore;
+		static List<SvgLaserSetting> laserSettings = new List<SvgLaserSetting>();
 		bool supportPWM = Settings.GetObject("Support Hardware PWM", true);
 
 		public ComboboxItem[] LaserOptions = new ComboboxItem[] { new ComboboxItem("M3 - Constant Power", "M3"), new ComboboxItem("M4 - Dynamic Power", "M4") };
+
 		public class ComboboxItem
 		{
 			public string Text { get; set; }
@@ -36,7 +41,7 @@ namespace LaserGRBL.SvgConverter
 
 		internal static void CreateAndShowDialog(GrblCore core, string filename, Form parent, bool append)
         {
-            using (SvgToGCodeForm f = new SvgToGCodeForm(core, filename, append))
+            using (SvgToGCodeForm f = new SvgToGCodeForm(core, filename))
             {
                 f.ShowDialogForm(parent);
                 if (f.DialogResult == DialogResult.OK)
@@ -46,12 +51,12 @@ namespace LaserGRBL.SvgConverter
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", f.IIMinPower.CurrentValue);
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", (f.CBLaserON.SelectedItem as ComboboxItem).Value);
 
-					core.LoadedFile.LoadImportedSVG(filename, append, core);
+					core.LoadedFile.LoadImportedSVG(filename, append, core, laserSettings);
                 }
             }
         }
 
-        private SvgToGCodeForm(GrblCore core, string filename, bool append)
+        private SvgToGCodeForm(GrblCore core, string filename)
 		{
 			InitializeComponent();
 			mCore = core;
@@ -65,9 +70,23 @@ namespace LaserGRBL.SvgConverter
 
 			CBLaserON.Items.Add(LaserOptions[0]);
 			CBLaserON.Items.Add(LaserOptions[1]);
+
+			cbLasermode.DisplayMember = "DisplayName";
+			cbLasermode.Items.AddRange(LaserMode.LaserModes);
+
+			LoadData(filename);
 		}
 
-		private void AssignMinMaxLimit()
+		private void LoadData(string filename)
+        {
+			GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
+			var colors = converter.getAllColorsInFile(filename).ToArray();
+			laserSettings = colors.Select(c => new SvgLaserSetting(c, mCore)).ToList();
+			dgvSettings.DataSource = laserSettings;
+		}
+
+
+        private void AssignMinMaxLimit()
         { 
 			IIBorderTracing.MaxValue = (int)mCore.Configuration.MaxRateX;
 			IIMaxPower.MaxValue = (int)mCore.Configuration.MaxPWM;

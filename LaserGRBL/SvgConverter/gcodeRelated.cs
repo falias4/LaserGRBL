@@ -84,6 +84,17 @@ namespace LaserGRBL.SvgConverter
 			lastx = -1; lasty = -1; lastz = 0; lasts = -1 ; lastg = -1;
 		}
 
+		public static void colorOverride(SvgLaserSetting setting)
+        {
+			gcodeXYFeed = setting.Speed;
+
+			SupportPWM = Settings.GetObject("Support Hardware PWM", true); //If Support PWM use S command instead of M3-M4 / M5
+			if (SupportPWM)
+				gcodeSpindleSpeed = setting.SMax;
+
+			gcodeSpindleCmdOn = setting.LaserMode.GCode;
+		}
+
 		public static bool reduceGCode
 		{
 			get { return gcodeCompress; }

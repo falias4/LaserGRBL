@@ -17,8 +17,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using System.Xml.XPath;
 using System.IO;
 using System.Globalization;
+using System.Collections.Generic;
 
 namespace LaserGRBL.SvgConverter
 {
@@ -32,6 +34,7 @@ namespace LaserGRBL.SvgConverter
 		private static float factor_Em2Px = 150;
 
 		private StringBuilder gcodeString = new StringBuilder();
+		private Dictionary<string, StringBuilder> gcodeStringsByColor = new Dictionary<string, StringBuilder>();
 		private int svgBezierAccuracy = 12;      // applied line segments at bezier curves
 		private bool svgScaleApply = false;      // try to scale final GCode if true
 		private float svgMaxSize = 100;          // final GCode size (greater dimension) if scale is applied
@@ -41,7 +44,7 @@ namespace LaserGRBL.SvgConverter
 
 		private bool svgPauseElement = false;    // if true insert GCode pause M0 before each element
 		private bool svgPausePenDown = false;    // if true insert pause M0 before pen down
-		private bool svgComments = false;        // if true insert additional comments into GCode
+		private bool svgComments = true;        // if true insert additional comments into GCode
 
 		private bool gcodeReduce = false;        // if true remove G1 commands if distance is < limit
 		private float gcodeReduceVal = 0.1f;     // limit when to remove G1 commands
@@ -62,6 +65,8 @@ namespace LaserGRBL.SvgConverter
 		/// <param name="file">String keeping file-name or URL</param>
 		/// <returns>String with GCode of imported data</returns>
 		private XElement svgCode;
+		private List<SvgLaserSetting> laserSettings = new List<SvgLaserSetting>();
+		private string currentColor = null;
 		private bool importInMM = false;
 		//private bool fromText = false;
 
@@ -71,18 +76,35 @@ namespace LaserGRBL.SvgConverter
 			//fromText = true;
 			importInMM = importMM;
 
-			// From xml spec valid chars: 
-			// #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF] 
-			// any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. 
-			text = RemoveInvalidUnicode.Replace(text, string.Empty);
-			svgCode = XElement.Parse(text, LoadOptions.None);
+			svgCode = parseText(text);
 
 			return convertSVG(svgCode, core);
 		}
 
-		public string convertFromFile(string file, GrblCore core)
+		private XElement parseText(string text)
+        {
+			// From xml spec valid chars: 
+			// #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF] 
+			// any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. 
+			text = RemoveInvalidUnicode.Replace(text, string.Empty);
+			return XElement.Parse(text, LoadOptions.None);
+		}
+
+		public IEnumerable<string> getAllColorsInFile(string file)
+        {
+			string xmlContent = System.IO.File.ReadAllText(file);
+			XElement parsedSvg = parseText(xmlContent);
+			List<XElement> elementsWithStyleAttr = parsedSvg.XPathSelectElements("//*[@style]").ToList();
+			var colors = elementsWithStyleAttr.Select(e => getColor(e));
+
+			colors = colors.Distinct().Where(c => !string.IsNullOrWhiteSpace(c));
+			return colors;
+		}
+
+		public string convertFromFile(string file, GrblCore core, List<SvgLaserSetting> settings)
 		{
 			string xml = System.IO.File.ReadAllText(file);
+			laserSettings = settings;
 			return convertFromText(xml, core, true);
 		}
 
@@ -93,6 +115,12 @@ namespace LaserGRBL.SvgConverter
 
 			gcode.PutInitialCommand(gcodeString);
 			startConvert(svgCode);
+
+            foreach (var strBuilder in gcodeStringsByColor.Values)
+            {
+				gcodeString.Append(strBuilder);
+            }
+
 			gcode.PutFinalCommand(gcodeString);
 
 			return gcodeString.Replace(',', '.').ToString();
@@ -103,6 +131,7 @@ namespace LaserGRBL.SvgConverter
 		/// </summary>
 		private void startConvert(XElement svgCode)
 		{
+			laserSettings.ForEach(setting => gcodeStringsByColor.Add(setting.ColorSvgRef, new StringBuilder()));
 			countSubPath = 0;
 			startFirstElement = true;
 			gcodeScale = 1;
@@ -262,6 +291,7 @@ namespace LaserGRBL.SvgConverter
 					if (groupElement.Attribute("id") != null)
 						gcodeString.Append("\r\n( Group level:" + level.ToString() + " id=" + groupElement.Attribute("id").Value + " )\r\n");
 				parseTransform(groupElement, true, level);   // transform will be applied in gcodeMove
+				parseAttributes(groupElement);
 				if (!svgNodesOnly)
 					parseBasicElements(groupElement, level);
 				parsePath(groupElement, level);
@@ -415,7 +445,41 @@ namespace LaserGRBL.SvgConverter
 			return 0f;
 		}
 
+		private void parseAttributes(XElement pathElement)
+        {
+			string previousColor = currentColor;
+			currentColor = getColor(pathElement);
+			if (!string.IsNullOrWhiteSpace(currentColor) && currentColor != previousColor)
+			{
+				gcode.colorOverride(laserSettings.First(s => s.ColorSvgRef == currentColor));
+			}
+			// TODO FAL: Other attributes
+        }
+
 		private string getColor(XElement pathElement)
+		{
+			if (pathElement.Attribute("style") != null)
+			{
+				var style = pathElement.Attribute("style").Value;
+				var strokeMatch = Regex.Match(style, @"stroke:(#[0-9a-fA-F]+)(;|$)");
+				if (strokeMatch.Success)
+				{
+					return strokeMatch.Groups[1].Value;
+				}
+				else
+				{
+					var fillMatch = Regex.Match(style, @"fill:(#[0-9a-fA-F]+)(;|$)");
+					if (fillMatch.Success)
+					{
+						return fillMatch.Groups[1].Value;
+					}
+				}
+				return "000000"; // default=black;
+			}
+			return currentColor;
+		}
+
+		private string getColorOld(XElement pathElement)
 		{
 			string style = "";
 			string stroke_color = "000000";        // default=black
@@ -447,13 +511,13 @@ namespace LaserGRBL.SvgConverter
 				{
 					if (pathElement != null)
 					{
-						string myColor = getColor(pathElement);
+						parseAttributes(pathElement);   // process color and stroke-dasharray
 
 						if (svgComments)
 						{
 							if (pathElement.Attribute("id") != null)
-								gcodeString.Append("\r\n( Basic shape level:" + level.ToString() + " id=" + pathElement.Attribute("id").Value + " )\r\n");
-							gcodeString.AppendFormat("( SVG color=#{0})\r\n", myColor);
+								gcodeStringsByColor[currentColor].Append("\r\n( Basic shape level:" + level.ToString() + " id=" + pathElement.Attribute("id").Value + " )\r\n");
+							gcodeStringsByColor[currentColor].AppendFormat("( SVG color=#{0})\r\n", currentColor);
 						}
 
 						if (startFirstElement)
@@ -482,13 +546,13 @@ namespace LaserGRBL.SvgConverter
 						if (pathElement.Attribute("r") != null) r = ConvertToPixel(pathElement.Attribute("r").Value);
 						if (pathElement.Attribute("points") != null) points = pathElement.Attribute("points").Value.Split(' ');
 
-						if (svgPauseElement || svgPausePenDown) { /*gcode.Pause(gcodeString, "Pause before path");*/ }
+						if (svgPauseElement || svgPausePenDown) { /*gcode.Pause(gcodeStringsByColor[currentColor], "Pause before path");*/ }
 						if (form == "rect")
 						{
 							if (ry == 0) { ry = rx; }
 							else if (rx == 0) { rx = ry; }
 							else if (rx != ry) { rx = Math.Min(rx, ry); ry = rx; }   // only same r for x and y are possible
-							if (svgComments) gcodeString.AppendFormat("( SVG-Rect x:{0} y:{1} width:{2} height:{3} rx:{4} ry:{5})\r\n", x, y, width, height, rx, ry);
+							if (svgComments) gcodeStringsByColor[currentColor].AppendFormat("( SVG-Rect x:{0} y:{1} width:{2} height:{3} rx:{4} ry:{5})\r\n", x, y, width, height, rx, ry);
 							x += offsetX; y += offsetY;
 							gcodeStartPath(x + rx, y + height, form);
 							gcodeMoveTo(x + width - rx, y + height, form + " a1");
@@ -507,7 +571,7 @@ namespace LaserGRBL.SvgConverter
 						}
 						else if (form == "circle")
 						{
-							if (svgComments) gcodeString.AppendFormat("( circle cx:{0} cy:{1} r:{2} )\r\n", cx, cy, r);
+							if (svgComments) gcodeStringsByColor[currentColor].AppendFormat("( circle cx:{0} cy:{1} r:{2} )\r\n", cx, cy, r);
 							cx += offsetX; cy += offsetY;
 							gcodeStartPath(cx + r, cy, form);
 							gcodeArcToCCW(cx + r, cy, -r, 0, form, avoidG23);
@@ -515,7 +579,7 @@ namespace LaserGRBL.SvgConverter
 						}
 						else if (form == "ellipse")
 						{
-							if (svgComments) gcodeString.AppendFormat("( ellipse cx:{0} cy:{1} rx:{2}  ry:{2})\r\n", cx, cy, rx, ry);
+							if (svgComments) gcodeStringsByColor[currentColor].AppendFormat("( ellipse cx:{0} cy:{1} rx:{2}  ry:{2})\r\n", cx, cy, rx, ry);
 							cx += offsetX; cy += offsetY;
 							gcodeStartPath(cx + rx, cy, form);
 							isReduceOk = true;
@@ -526,7 +590,7 @@ namespace LaserGRBL.SvgConverter
 						}
 						else if (form == "line")
 						{
-							if (svgComments) gcodeString.AppendFormat("( SVG-Line x1:{0} y1:{1} x2:{2} y2:{3} )\r\n", x1, y1, x2, y2);
+							if (svgComments) gcodeStringsByColor[currentColor].AppendFormat("( SVG-Line x1:{0} y1:{1} x2:{2} y2:{3} )\r\n", x1, y1, x2, y2);
 							x1 += offsetX; y1 += offsetY;
 							gcodeStartPath(x1, y1, form);
 							gcodeMoveTo(x2, y2, form);
@@ -536,7 +600,7 @@ namespace LaserGRBL.SvgConverter
 						{
 							offsetX = 0;// (float)matrixElement.OffsetX;
 							offsetY = 0;// (float)matrixElement.OffsetY;
-							if (svgComments) gcodeString.AppendFormat("( SVG-Polyline )\r\n");
+							if (svgComments) gcodeStringsByColor[currentColor].AppendFormat("( SVG-Polyline )\r\n");
 							int index = 0;
 							for (index = 0; index < points.Length; index++)
 							{
@@ -565,20 +629,20 @@ namespace LaserGRBL.SvgConverter
 								gcodeStopPath(form);
 							}
 							else
-								gcodeString.AppendLine("( polygon coordinates - missing ',')");
+								gcodeStringsByColor[currentColor].AppendLine("( polygon coordinates - missing ',')");
 						}
 						else if ((form == "text") || (form == "image"))
 						{
-							gcodeString.AppendLine("( +++++++++++++++++++++++++++++++++ )");
-							gcodeString.AppendLine("( ++++++ " + form + " is not supported ++++ )");
+							gcodeStringsByColor[currentColor].AppendLine("( +++++++++++++++++++++++++++++++++ )");
+							gcodeStringsByColor[currentColor].AppendLine("( ++++++ " + form + " is not supported ++++ )");
 							if (form == "text")
 							{
-								gcodeString.AppendLine("( ++ Convert Object to Path first + )");
+								gcodeStringsByColor[currentColor].AppendLine("( ++ Convert Object to Path first + )");
 							}
-							gcodeString.AppendLine("( +++++++++++++++++++++++++++++++++ )");
+							gcodeStringsByColor[currentColor].AppendLine("( +++++++++++++++++++++++++++++++++ )");
 						}
 						else
-						{ if (svgComments) gcodeString.Append("( ++++++ Unknown Shape: " + form + " )"); }
+						{ if (svgComments) gcodeStringsByColor[currentColor].Append("( ++++++ Unknown Shape: " + form + " )"); }
 
 						matrixElement = oldMatrixElement;
 					}
@@ -609,16 +673,16 @@ namespace LaserGRBL.SvgConverter
 					if (id.Length > 20)
 						id = id.Substring(0, 20);
 
-					string myColor = getColor(pathElement);
+					parseAttributes(pathElement);   // process color and stroke-dasharray
 
-					// gcodeString.Append("( Start path )\r\n");
+					// gcodeStringsByColor[currentColor].Append("( Start path )\r\n");
 					if (svgComments)
 					{
 						if (pathElement.Attribute("id") != null)
-							gcodeString.Append("\r\n( Path level:" + level.ToString() + " id=" + pathElement.Attribute("id").Value + " )\r\n");
+							gcodeStringsByColor[currentColor].Append("\r\n( Path level:" + level.ToString() + " id=" + pathElement.Attribute("id").Value + " )\r\n");
 						else
-							gcodeString.Append("\r\n( SVG path=" + id + " )\r\n");
-						gcodeString.AppendFormat("\r\n(SVG color=#{0})\r\n", myColor);
+							gcodeStringsByColor[currentColor].Append("\r\n( SVG path=" + id + " )\r\n");
+						gcodeStringsByColor[currentColor].AppendFormat("\r\n(SVG color=#{0})\r\n", currentColor);
 					}
 
 					if (pathElement.Attribute("id") != null)
@@ -630,7 +694,7 @@ namespace LaserGRBL.SvgConverter
 					if (d.Length > 0)
 					{
 						// split complete path in to command-tokens
-						if (svgPauseElement || svgPausePenDown) { /*gcode.Pause(gcodeString, "Pause before path");*/ }
+						if (svgPauseElement || svgPausePenDown) { /*gcode.Pause(gcodeStringsByColor[currentColor], "Pause before path");*/ }
 						string separators = @"(?=[A-Za-z-[e]])";
 						var tokens = Regex.Split(d, separators).Where(t => !string.IsNullOrEmpty(t));
 						int objCount = 0;
@@ -688,7 +752,7 @@ namespace LaserGRBL.SvgConverter
 						{ currentX = floatArgs[i] + lastX; currentY = floatArgs[i + 1] + lastY; }
 						if (startSubPath)
 						{
-							if (svgComments) { gcodeString.AppendFormat("( Start new subpath at {0} {1} )\r\n", floatArgs[i], floatArgs[i + 1]); }
+							if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( Start new subpath at {0} {1} )\r\n", floatArgs[i], floatArgs[i + 1]); }
 							//                            pathCount = 0;
 							if (countSubPath++ > 0)
 								gcodeStopPath("Stop Path");
@@ -728,7 +792,7 @@ namespace LaserGRBL.SvgConverter
 					firstX = null; firstY = null;
 					startSubPath = true;
 					if ((svgClosePathExtend) && (!svgNodesOnly))
-					{ gcodeString.Append(secondMove); }
+					{ gcodeStringsByColor[currentColor].Append(secondMove); }
 					gcodeStopPath("Z");
 					break;
 
@@ -787,11 +851,11 @@ namespace LaserGRBL.SvgConverter
 					break;
 
 				case 'A':       // Draws an elliptical arc from the current point to (x, y)
-					if (svgComments) { gcodeString.AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
+					if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
 					for (int rep = 0; rep < floatArgs.Length; rep += 7)
 					{
 						objCount++;
-						if (svgComments) { gcodeString.AppendFormat("( draw arc nr. {0} )\r\n", (1 + rep / 6)); }
+						if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( draw arc nr. {0} )\r\n", (1 + rep / 6)); }
 						float rx, ry, rot, large, sweep, nx, ny;
 						rx = floatArgs[rep]; ry = floatArgs[rep + 1];
 						rot = floatArgs[rep + 2];
@@ -815,11 +879,11 @@ namespace LaserGRBL.SvgConverter
 					break;
 
 				case 'C':       // Draws a cubic Bézier curve from the current point to (x,y)
-					if (svgComments) { gcodeString.AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
+					if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
 					for (int rep = 0; rep < floatArgs.Length; rep += 6)
 					{
 						objCount++;
-						if (svgComments) { gcodeString.AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 6)); }
+						if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 6)); }
 						if ((rep + 5) < floatArgs.Length)
 						{
 							float cx1, cy1, cx2, cy2, cx3, cy3;
@@ -854,17 +918,17 @@ namespace LaserGRBL.SvgConverter
 							lastX = cx3; lastY = cy3;
 						}
 						else
-						{ gcodeString.AppendFormat("( Missing argument after {0} )\r\n", rep); }
+						{ gcodeStringsByColor[currentColor].AppendFormat("( Missing argument after {0} )\r\n", rep); }
 					}
 					startSubPath = true;
 					break;
 
 				case 'S':       // Draws a cubic Bézier curve from the current point to (x,y)
-					if (svgComments) { gcodeString.AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
+					if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
 					for (int rep = 0; rep < floatArgs.Length; rep += 4)
 					{
 						objCount++;
-						if (svgComments) { gcodeString.AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 4)); }
+						if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 4)); }
 						float cx2, cy2, cx3, cy3;
 						if (absolute)
 						{
@@ -898,11 +962,11 @@ namespace LaserGRBL.SvgConverter
 					break;
 
 				case 'Q':       // Draws a quadratic Bézier curve from the current point to (x,y)
-					if (svgComments) { gcodeString.AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
+					if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
 					for (int rep = 0; rep < floatArgs.Length; rep += 4)
 					{
 						objCount++;
-						if (svgComments) { gcodeString.AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 4)); }
+						if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 4)); }
 						float cx2, cy2, cx3, cy3;
 						if (absolute)
 						{
@@ -941,11 +1005,11 @@ namespace LaserGRBL.SvgConverter
 					break;
 
 				case 'T':       // Draws a quadratic Bézier curve from the current point to (x,y)
-					if (svgComments) { gcodeString.AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
+					if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( Command {0} {1} )\r\n", command.ToString(), ((absolute == true) ? "absolute" : "relative")); }
 					for (int rep = 0; rep < floatArgs.Length; rep += 2)
 					{
 						objCount++;
-						if (svgComments) { gcodeString.AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 2)); }
+						if (svgComments) { gcodeStringsByColor[currentColor].AppendFormat("( draw curve nr. {0} )\r\n", (1 + rep / 2)); }
 						float cx3, cy3;
 						if (absolute)
 						{
@@ -982,7 +1046,7 @@ namespace LaserGRBL.SvgConverter
 					break;
 
 				default:
-					if (svgComments) gcodeString.Append("( *********** unknown: " + command.ToString() + " ***** )\r\n");
+					if (svgComments) gcodeStringsByColor[currentColor].Append("( *********** unknown: " + command.ToString() + " ***** )\r\n");
 					break;
 			}
 			return objCount;
@@ -1169,8 +1233,8 @@ namespace LaserGRBL.SvgConverter
 			lastGCX = coord.X; lastGCY = coord.Y;
 			lastSetGCX = coord.X; lastSetGCY = coord.Y;
 			gcodePenUp(cmt);
-			gcode.MoveToRapid(gcodeString, coord, cmt);
-			if (svgPausePenDown) { /*gcode.Pause(gcodeString, "Pause before Pen Down");*/ }
+			gcode.MoveToRapid(gcodeStringsByColor[currentColor], coord, cmt);
+			if (svgPausePenDown) { /*gcode.Pause(gcodeStringsByColor[currentColor], "Pause before Pen Down");*/ }
 			penIsDown = false;
 			isReduceOk = false;
 		}
@@ -1182,7 +1246,7 @@ namespace LaserGRBL.SvgConverter
 			if (gcodeReduce)
 			{
 				if ((lastSetGCX != lastGCX) || (lastSetGCY != lastGCY)) // restore last skipped point for accurat G2/G3 use
-					gcode.MoveTo(gcodeString, new System.Windows.Point(lastGCX, lastGCY), "restore Point");
+					gcode.MoveTo(gcodeStringsByColor[currentColor], new System.Windows.Point(lastGCX, lastGCY), "restore Point");
 			}
 			gcodePenUp(cmt);
 		}
@@ -1226,7 +1290,7 @@ namespace LaserGRBL.SvgConverter
 			}
 			if (!gcodeReduce || !rejectPoint)       // write GCode
 			{
-				gcode.MoveTo(gcodeString, coord, cmt);
+				gcode.MoveTo(gcodeStringsByColor[currentColor], coord, cmt);
 			}
 			lastGCX = coord.X; lastGCY = coord.Y;
 		}
@@ -1242,9 +1306,9 @@ namespace LaserGRBL.SvgConverter
 			if (gcodeReduce && isReduceOk)      // restore last skipped point for accurat G2/G3 use
 			{
 				if ((lastSetGCX != lastGCX) || (lastSetGCY != lastGCY))
-					gcode.MoveTo(gcodeString, new System.Windows.Point(lastGCX, lastGCY), cmt);
+					gcode.MoveTo(gcodeStringsByColor[currentColor], new System.Windows.Point(lastGCX, lastGCY), cmt);
 			}
-			gcode.Arc(gcodeString, 3, coordxy, coordij, cmt, avoidG23);
+			gcode.Arc(gcodeStringsByColor[currentColor], 3, coordxy, coordij, cmt, avoidG23);
 		}
 
 		/// <summary>
@@ -1253,13 +1317,13 @@ namespace LaserGRBL.SvgConverter
 		private void gcodePenUp(string cmt)
 		{
 			if (penIsDown)
-				gcode.PenUp(gcodeString, cmt);
+				gcode.PenUp(gcodeStringsByColor[currentColor], cmt);
 			penIsDown = false;
 		}
 		private void gcodePenDown(string cmt)
 		{
 			if (!penIsDown)
-				gcode.PenDown(gcodeString, cmt);
+				gcode.PenDown(gcodeStringsByColor[currentColor], cmt);
 			penIsDown = true;
 		}
 
