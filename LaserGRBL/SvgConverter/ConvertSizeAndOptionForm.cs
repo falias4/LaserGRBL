@@ -186,7 +186,7 @@ namespace LaserGRBL.SvgConverter
 				{
 					var currentRow = laserSettings[e.RowIndex];
 					currentRow.Speed = selectedMaterial.Speed;
-					currentRow.SMax = IIMaxPower.MaxValue * selectedMaterial.Power / 100;
+					currentRow.SMax = (int)mCore.Configuration.MaxPWM * selectedMaterial.Power / 100;
 					currentRow.Passes = selectedMaterial.Cycles;
 					updateDgvRow(e.RowIndex);
 				}
