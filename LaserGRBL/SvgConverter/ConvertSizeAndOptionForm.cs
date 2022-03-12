@@ -5,6 +5,7 @@
 // You should have received a copy of the GPLv3 General Public License  along with this program; if not, write to the Free Software  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,  USA. using System;
 
 using LaserGRBL.PSHelper;
+using Svg;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,6 +23,7 @@ namespace LaserGRBL.SvgConverter
 	{
 		GrblCore mCore;
 		static List<SvgColorSetting> laserSettings = new List<SvgColorSetting>();
+		Dictionary<string, Image> svgImages = new Dictionary<string, Image>();
 		bool supportPWM = Settings.GetObject("Support Hardware PWM", true);
 
 		public class ComboboxItem
@@ -77,27 +79,66 @@ namespace LaserGRBL.SvgConverter
 			cbLasermode.ValueType = typeof(LaserMode);
 			cbLasermode.DataSource = new BindingSource(LaserMode.LaserModes, null);
 
-			LoadData(filename);
-		}
-
-		private void LoadData(string filename)
-        {
-			GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
-			var colors = converter.getAllColorsInFile(filename).ToArray();
-			laserSettings = colors.Select(c => new SvgColorSetting(c, mCore)).ToList();
-			var boundList = new BindingList<SvgColorSetting>(laserSettings);
-			dgvSvgColorSettings.DataSource = boundList;
-
-            dgvSvgColorSettings.CellFormatting += DgvSvgColorSettings_CellFormatting;
-            dgvSvgColorSettings.CellMouseEnter += DgvSvgColorSettings_CellMouseEnter;
-            dgvSvgColorSettings.CellMouseLeave += DgvSvgColorSettings_CellMouseLeave;
-            dgvSvgColorSettings.CellClick += DgvSvgColorSettings_CellClick;
-            dgvSvgColorSettings.CellEnter += DgvSettings_CellEnter;
-			dgvSvgColorSettings.CellValueChanged += DgvSettings_CellValueChanged;
+			initDataGrid(filename);
 		}
 
 		int hoveredMaterialDbBtnRow = -1;
 		int restoreMaterialDbBtnRow = -1;
+		private bool dataGridMouseClicked = false;
+
+		private void initDataGrid(string filename)
+		{
+			GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
+			var colors = converter.getAllColorsInFile(filename).ToArray();
+
+			// Convert SvgDocument to Image
+			svgImages = converter.splitSvgByColor(filename, colors).Aggregate(new Dictionary<string, Image>(), (acc, svgByColor) =>
+			{
+				acc.Add(svgByColor.Key, svgByColor.Value.Draw());
+				return acc;
+			});
+
+			laserSettings = colors.Select(c => new SvgColorSetting(c, mCore)).ToList();
+			var boundList = new BindingList<SvgColorSetting>(laserSettings);
+			dgvSvgColorSettings.DataSource = boundList;
+
+			dgvSvgColorSettings.CellFormatting += DgvSvgColorSettings_CellFormatting;
+			dgvSvgColorSettings.CellMouseEnter += DgvSvgColorSettings_CellMouseEnter;
+			dgvSvgColorSettings.CellMouseLeave += DgvSvgColorSettings_CellMouseLeave;
+			dgvSvgColorSettings.CellClick += DgvSvgColorSettings_CellClick;
+			dgvSvgColorSettings.CellEnter += DgvSettings_CellEnter;
+			dgvSvgColorSettings.CellValueChanged += DgvSettings_CellValueChanged;
+			dgvSvgColorSettings.SelectionChanged += DgvSvgColorSettings_SelectionChanged;
+			dgvSvgColorSettings.CellMouseDown += (sender, e) => { dataGridMouseClicked = true; };
+			dgvSvgColorSettings.CellMouseUp += (sender, e) => { dataGridMouseClicked = false; };
+
+			dgvSvgColorSettings.Rows[0].Selected = true;
+		}
+
+        private void DgvSvgColorSettings_SelectionChanged(object sender, EventArgs e)
+        {
+			UpdateSvgBySelection();
+        }
+
+		private void UpdateSvgBySelection()
+		{
+			DataGridViewRow row = null;
+			if (dgvSvgColorSettings.SelectedRows.Count == 1)
+			{
+				row = dgvSvgColorSettings.SelectedRows[0];
+			}
+			else if (dgvSvgColorSettings.SelectedCells.Count > 0)
+			{
+				var rowIdx = dgvSvgColorSettings.SelectedCells[0].RowIndex;
+				row = dgvSvgColorSettings.Rows[rowIdx];
+			}
+
+			if (row != null)
+			{
+				var selectedSetting = row.DataBoundItem as SvgColorSetting;
+				pbSvgPreview.Image = svgImages[selectedSetting.ColorSvgRef];
+			}
+		}
 
 		private void DgvSvgColorSettings_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
 		{
@@ -162,6 +203,12 @@ namespace LaserGRBL.SvgConverter
 
         private void DgvSettings_CellEnter(object sender, DataGridViewCellEventArgs e)
 		{
+			if (dgvSvgColorSettings.Columns[e.ColumnIndex].ReadOnly && !dataGridMouseClicked)
+			{
+				SendKeys.Send("{TAB}");
+				return;
+			}
+
 			dgvSvgColorSettings.BeginEdit(false);
 
 			if (dgvSvgColorSettings.EditingControl is TextBoxBase)

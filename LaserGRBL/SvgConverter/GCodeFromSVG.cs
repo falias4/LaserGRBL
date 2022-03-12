@@ -21,6 +21,7 @@ using System.Xml.XPath;
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using Svg;
 
 namespace LaserGRBL.SvgConverter
 {
@@ -100,6 +101,42 @@ namespace LaserGRBL.SvgConverter
 			colors = colors.Distinct().Where(c => !string.IsNullOrWhiteSpace(c));
 			return colors;
 		}
+
+		public Dictionary<string, SvgDocument> splitSvgByColor(string file, string[] colors)
+		{
+			var result = new Dictionary<string, SvgDocument>();
+			var srcDoc = SvgDocument.Open(file);
+
+			string xmlContent = System.IO.File.ReadAllText(file);
+			XElement parsedSvg = parseText(xmlContent);
+			
+			foreach (var shownColor in colors)
+			{
+				// create clone of SVG for each color
+				XElement svgCopy = new XElement(parsedSvg);
+				List<XElement> elementsWithStyleAttr = svgCopy.XPathSelectElements("//*[@style]").ToList();
+
+				foreach (var element in elementsWithStyleAttr)
+				{
+					var elColor = getColor(element);
+
+					var hideElement = !string.IsNullOrEmpty(elColor) && elColor != shownColor;
+					if (hideElement)
+					{
+						element.SetAttributeValue("visibility", "hidden");
+					}
+				}
+
+				// create an XmlDocument so it can be opened with SvgDocument
+				System.Xml.XmlDocument xmldoc = new System.Xml.XmlDocument();
+				xmldoc.Load(svgCopy.CreateReader());
+				var doc = SvgDocument.Open(xmldoc);
+				result.Add(shownColor, doc);
+			}
+
+			return result;
+		}
+
 
 		public string convertFromFile(string file, GrblCore core, List<SvgColorSetting> settings)
 		{

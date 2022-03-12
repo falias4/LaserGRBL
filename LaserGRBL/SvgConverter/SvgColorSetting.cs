@@ -8,6 +8,8 @@ namespace LaserGRBL.SvgConverter
 {
     public class SvgColorSetting
     {
+        private int _maxpwm = 0;
+
         public string ColorSvgRef { get; set; }
         public string ColorName { get; set; }
         public Bitmap ColorAsBitmap { get; set; }
@@ -15,16 +17,21 @@ namespace LaserGRBL.SvgConverter
         public LaserMode LaserMode { get; set; }
         public int SMin { get; set; }
         public string SMinPercentage { get { return getPercentageOfPower(SMin);  } }
-        public int SMax { get; set; }
+        private int _sMax;
+
+        public int SMax
+        {
+            get { return _sMax; }
+            set { _sMax = Math.Min(value, _maxpwm); }
+        }
+
         public string SMaxPercentage { get { return getPercentageOfPower(SMax); } }
         public int Passes { get; set; }
-
-        private decimal _maxpwm = 0;
 
         public SvgColorSetting(string colorFromSvg, GrblCore core)
         {
             ColorSvgRef = colorFromSvg;
-            _maxpwm = core?.Configuration != null ? core.Configuration.MaxPWM : -1;
+            _maxpwm = core?.Configuration != null ? (int)core.Configuration.MaxPWM : -1;
 
             // converting it to & from Win32 can lead to a 'Readable Color'
             var color = ColorTranslator.FromWin32(ColorTranslator.ToWin32(ColorTranslator.FromHtml(colorFromSvg)));

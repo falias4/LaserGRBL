@@ -90,7 +90,7 @@ namespace LaserGRBL.SvgConverter
 
 			SupportPWM = Settings.GetObject("Support Hardware PWM", true); //If Support PWM use S command instead of M3-M4 / M5
 			if (SupportPWM)
-				gcodeSpindleSpeed = setting.SMax;
+				gcodeSpindleSpeed = (float)setting.SMax;
 
 			gcodeSpindleCmdOn = setting.LaserMode.GCode;
 		}
