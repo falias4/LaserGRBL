@@ -6,7 +6,7 @@ using System.Text;
 
 namespace LaserGRBL.SvgConverter
 {
-    public class SvgLaserSetting
+    public class SvgColorSetting
     {
         public string ColorSvgRef { get; set; }
         public string ColorName { get; set; }
@@ -14,16 +14,21 @@ namespace LaserGRBL.SvgConverter
         public int Speed { get; set; }
         public LaserMode LaserMode { get; set; }
         public int SMin { get; set; }
-        public string SMinPercentage { get; set; }
+        public string SMinPercentage { get { return getPercentageOfPower(SMin);  } }
         public int SMax { get; set; }
-        public string SMaxPercentage { get; set; }
+        public string SMaxPercentage { get { return getPercentageOfPower(SMax); } }
+        public int Passes { get; set; }
 
-        public SvgLaserSetting(string colorFromSvg, GrblCore core)
+        private decimal _maxpwm = 0;
+
+        public SvgColorSetting(string colorFromSvg, GrblCore core)
         {
             ColorSvgRef = colorFromSvg;
+            _maxpwm = core?.Configuration != null ? core.Configuration.MaxPWM : -1;
 
-            var color = ColorTranslator.FromHtml(colorFromSvg);
-            ColorName = findKnownColorName(color);
+            // converting it to & from Win32 can lead to a 'Readable Color'
+            var color = ColorTranslator.FromWin32(ColorTranslator.ToWin32(ColorTranslator.FromHtml(colorFromSvg)));
+            ColorName = color.Name;
             ColorAsBitmap = createBitmapFromColor(color, 35, 12);
             Speed = Settings.GetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", 1000);
 
@@ -33,10 +38,15 @@ namespace LaserGRBL.SvgConverter
             else
                 LaserMode = LaserMode.LaserModes[1];
 
-            SMin =Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", 0);
-            SMinPercentage = "0 %";
-            SMax =Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMax", (int)core.Configuration.MaxPWM);
-            SMaxPercentage = "0 %";
+            SMin = Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", 0);
+            SMax = Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMax", (int)core.Configuration.MaxPWM);
+
+            Passes = 1;
+        }
+
+        private string getPercentageOfPower(int power)
+        {
+            return _maxpwm > 0 ? (power / _maxpwm).ToString("P1") : "-";
         }
 
         private string findKnownColorName(Color color)

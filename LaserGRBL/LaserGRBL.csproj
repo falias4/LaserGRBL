@@ -131,7 +131,7 @@
     <Compile Include="ComWrapper\MySerial\WinSerialStream.cs" />
     <Compile Include="ComWrapper\UsbSerial2.cs" />
     <Compile Include="SvgConverter\LaserMode.cs" />
-    <Compile Include="SvgConverter\SvgLaserSetting.cs" />
+    <Compile Include="SvgConverter\SvgColorSetting.cs" />
     <Compile Include="Tools\Project.cs" />
     <Compile Include="Core\VigoCore.cs" />
     <Compile Include="CsPotrace\PotraceClipper.cs" />

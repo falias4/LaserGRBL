@@ -65,7 +65,7 @@ namespace LaserGRBL.SvgConverter
 		/// <param name="file">String keeping file-name or URL</param>
 		/// <returns>String with GCode of imported data</returns>
 		private XElement svgCode;
-		private List<SvgLaserSetting> laserSettings = new List<SvgLaserSetting>();
+		private List<SvgColorSetting> svgColorSettings = new List<SvgColorSetting>();
 		private string currentColor = null;
 		private bool importInMM = false;
 		//private bool fromText = false;
@@ -101,10 +101,10 @@ namespace LaserGRBL.SvgConverter
 			return colors;
 		}
 
-		public string convertFromFile(string file, GrblCore core, List<SvgLaserSetting> settings)
+		public string convertFromFile(string file, GrblCore core, List<SvgColorSetting> settings)
 		{
 			string xml = System.IO.File.ReadAllText(file);
-			laserSettings = settings;
+			svgColorSettings = settings;
 			return convertFromText(xml, core, true);
 		}
 
@@ -116,10 +116,14 @@ namespace LaserGRBL.SvgConverter
 			gcode.PutInitialCommand(gcodeString);
 			startConvert(svgCode);
 
-            foreach (var strBuilder in gcodeStringsByColor.Values)
-            {
-				gcodeString.Append(strBuilder);
-            }
+			foreach (var kvpStringByColor in gcodeStringsByColor)
+			{
+				var setting = svgColorSettings.Single(s => s.ColorSvgRef == kvpStringByColor.Key);
+				for (int i = 0; i < setting.Passes; i++)
+				{
+					gcodeString.Append(kvpStringByColor.Value);
+				}
+			}
 
 			gcode.PutFinalCommand(gcodeString);
 
@@ -131,7 +135,7 @@ namespace LaserGRBL.SvgConverter
 		/// </summary>
 		private void startConvert(XElement svgCode)
 		{
-			laserSettings.ForEach(setting => gcodeStringsByColor.Add(setting.ColorSvgRef, new StringBuilder()));
+			svgColorSettings.ForEach(setting => gcodeStringsByColor.Add(setting.ColorSvgRef, new StringBuilder()));
 			countSubPath = 0;
 			startFirstElement = true;
 			gcodeScale = 1;
@@ -451,7 +455,7 @@ namespace LaserGRBL.SvgConverter
 			currentColor = getColor(pathElement);
 			if (!string.IsNullOrWhiteSpace(currentColor) && currentColor != previousColor)
 			{
-				gcode.colorOverride(laserSettings.First(s => s.ColorSvgRef == currentColor));
+				gcode.colorOverride(svgColorSettings.First(s => s.ColorSvgRef == currentColor));
 			}
 			// TODO FAL: Other attributes
         }

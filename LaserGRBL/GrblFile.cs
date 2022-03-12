@@ -114,7 +114,7 @@ namespace LaserGRBL
 			RiseOnFileLoaded(filename, elapsed);
 		}
 
-		public void LoadImportedSVG(string filename, bool append, GrblCore core, List<SvgLaserSetting> settings = null)
+		public void LoadImportedSVG(string filename, bool append, GrblCore core, List<SvgColorSetting> settings = null)
 		{
 			RiseOnFileLoading(filename);
 

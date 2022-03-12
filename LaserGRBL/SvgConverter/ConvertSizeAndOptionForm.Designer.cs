@@ -53,6 +53,10 @@ namespace LaserGRBL.SvgConverter
 		{
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SvgToGCodeForm));
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
             this.GbSpeed = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
@@ -75,7 +79,7 @@ namespace LaserGRBL.SvgConverter
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.BtnCancel = new System.Windows.Forms.Button();
             this.BtnCreate = new System.Windows.Forms.Button();
-            this.dgvSettings = new System.Windows.Forms.DataGridView();
+            this.dgvSvgColorSettings = new System.Windows.Forms.DataGridView();
             this.colorSvgRef = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colorCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ColorVi = new System.Windows.Forms.DataGridViewImageColumn();
@@ -85,6 +89,8 @@ namespace LaserGRBL.SvgConverter
             this.sminPercentage = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.smax = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.smaxPercentage = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.passes = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.materialDbCol = new System.Windows.Forms.DataGridViewImageColumn();
             this.TT = new System.Windows.Forms.ToolTip(this.components);
             this.tableLayoutPanel9.SuspendLayout();
             this.GbSpeed.SuspendLayout();
@@ -92,7 +98,7 @@ namespace LaserGRBL.SvgConverter
             this.GbLaser.SuspendLayout();
             this.tableLayoutPanel7.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvSettings)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvSvgColorSettings)).BeginInit();
             this.SuspendLayout();
             // 
             // tableLayoutPanel9
@@ -268,7 +274,7 @@ namespace LaserGRBL.SvgConverter
             resources.ApplyResources(this.tableLayoutPanel1, "tableLayoutPanel1");
             this.tableLayoutPanel1.Controls.Add(this.BtnCancel, 1, 0);
             this.tableLayoutPanel1.Controls.Add(this.BtnCreate, 2, 0);
-            this.tableLayoutPanel1.Controls.Add(this.dgvSettings, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.dgvSvgColorSettings, 0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             // 
             // BtnCancel
@@ -285,13 +291,13 @@ namespace LaserGRBL.SvgConverter
             this.BtnCreate.Name = "BtnCreate";
             this.BtnCreate.UseVisualStyleBackColor = true;
             // 
-            // dgvSettings
+            // dgvSvgColorSettings
             // 
-            this.dgvSettings.AllowUserToAddRows = false;
-            this.dgvSettings.AllowUserToDeleteRows = false;
-            this.dgvSettings.AllowUserToOrderColumns = true;
-            this.dgvSettings.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvSettings.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.dgvSvgColorSettings.AllowUserToAddRows = false;
+            this.dgvSvgColorSettings.AllowUserToDeleteRows = false;
+            this.dgvSvgColorSettings.AllowUserToOrderColumns = true;
+            this.dgvSvgColorSettings.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvSvgColorSettings.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colorSvgRef,
             this.colorCode,
             this.ColorVi,
@@ -300,9 +306,11 @@ namespace LaserGRBL.SvgConverter
             this.smin,
             this.sminPercentage,
             this.smax,
-            this.smaxPercentage});
-            resources.ApplyResources(this.dgvSettings, "dgvSettings");
-            this.dgvSettings.Name = "dgvSettings";
+            this.smaxPercentage,
+            this.passes,
+            this.materialDbCol});
+            resources.ApplyResources(this.dgvSvgColorSettings, "dgvSvgColorSettings");
+            this.dgvSvgColorSettings.Name = "dgvSvgColorSettings";
             // 
             // colorSvgRef
             // 
@@ -324,6 +332,10 @@ namespace LaserGRBL.SvgConverter
             // ColorVi
             // 
             this.ColorVi.DataPropertyName = "ColorAsBitmap";
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.NullValue = ((object)(resources.GetObject("dataGridViewCellStyle1.NullValue")));
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.Transparent;
+            this.ColorVi.DefaultCellStyle = dataGridViewCellStyle1;
             this.ColorVi.Frozen = true;
             resources.ApplyResources(this.ColorVi, "ColorVi");
             this.ColorVi.Name = "ColorVi";
@@ -333,24 +345,29 @@ namespace LaserGRBL.SvgConverter
             // speed
             // 
             this.speed.DataPropertyName = "Speed";
+            this.speed.Frozen = true;
             resources.ApplyResources(this.speed, "speed");
             this.speed.Name = "speed";
             // 
             // cbLasermode
             // 
-            this.cbLasermode.DataPropertyName = "LaserMode";
+            this.cbLasermode.Frozen = true;
             resources.ApplyResources(this.cbLasermode, "cbLasermode");
             this.cbLasermode.Name = "cbLasermode";
             // 
             // smin
             // 
             this.smin.DataPropertyName = "SMin";
+            this.smin.Frozen = true;
             resources.ApplyResources(this.smin, "smin");
             this.smin.Name = "smin";
             // 
             // sminPercentage
             // 
             this.sminPercentage.DataPropertyName = "SMinPercentage";
+            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.DarkGray;
+            this.sminPercentage.DefaultCellStyle = dataGridViewCellStyle2;
+            this.sminPercentage.Frozen = true;
             resources.ApplyResources(this.sminPercentage, "sminPercentage");
             this.sminPercentage.Name = "sminPercentage";
             this.sminPercentage.ReadOnly = true;
@@ -358,15 +375,37 @@ namespace LaserGRBL.SvgConverter
             // smax
             // 
             this.smax.DataPropertyName = "SMax";
+            this.smax.Frozen = true;
             resources.ApplyResources(this.smax, "smax");
             this.smax.Name = "smax";
             // 
             // smaxPercentage
             // 
             this.smaxPercentage.DataPropertyName = "SMaxPercentage";
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.DarkGray;
+            this.smaxPercentage.DefaultCellStyle = dataGridViewCellStyle3;
+            this.smaxPercentage.Frozen = true;
             resources.ApplyResources(this.smaxPercentage, "smaxPercentage");
             this.smaxPercentage.Name = "smaxPercentage";
             this.smaxPercentage.ReadOnly = true;
+            // 
+            // passes
+            // 
+            this.passes.DataPropertyName = "Passes";
+            this.passes.Frozen = true;
+            resources.ApplyResources(this.passes, "passes");
+            this.passes.Name = "passes";
+            // 
+            // materialDbCol
+            // 
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle4.NullValue = ((object)(resources.GetObject("dataGridViewCellStyle4.NullValue")));
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.Transparent;
+            this.materialDbCol.DefaultCellStyle = dataGridViewCellStyle4;
+            resources.ApplyResources(this.materialDbCol, "materialDbCol");
+            this.materialDbCol.Image = ((System.Drawing.Image)(resources.GetObject("materialDbCol.Image")));
+            this.materialDbCol.Name = "materialDbCol";
+            this.materialDbCol.ReadOnly = true;
             // 
             // TT
             // 
@@ -392,7 +431,7 @@ namespace LaserGRBL.SvgConverter
             this.tableLayoutPanel7.ResumeLayout(false);
             this.tableLayoutPanel7.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dgvSettings)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvSvgColorSettings)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -406,7 +445,7 @@ namespace LaserGRBL.SvgConverter
 		private UserControls.ImageButton BtnPSHelper;
 		private System.Windows.Forms.Label LblMinPerc;
 		private System.Windows.Forms.Label LblMaxPerc;
-        private System.Windows.Forms.DataGridView dgvSettings;
+        private System.Windows.Forms.DataGridView dgvSvgColorSettings;
         private System.Windows.Forms.DataGridViewTextBoxColumn colorSvgRef;
         private System.Windows.Forms.DataGridViewTextBoxColumn colorCode;
         private System.Windows.Forms.DataGridViewImageColumn ColorVi;
@@ -416,5 +455,7 @@ namespace LaserGRBL.SvgConverter
         private System.Windows.Forms.DataGridViewTextBoxColumn sminPercentage;
         private System.Windows.Forms.DataGridViewTextBoxColumn smax;
         private System.Windows.Forms.DataGridViewTextBoxColumn smaxPercentage;
+        private System.Windows.Forms.DataGridViewTextBoxColumn passes;
+        private System.Windows.Forms.DataGridViewImageColumn materialDbCol;
     }
 }

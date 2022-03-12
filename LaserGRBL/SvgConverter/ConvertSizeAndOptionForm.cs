@@ -7,6 +7,7 @@
 using LaserGRBL.PSHelper;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 
 using System.Linq;
@@ -20,10 +21,8 @@ namespace LaserGRBL.SvgConverter
 	public partial class SvgToGCodeForm : Form
 	{
 		GrblCore mCore;
-		static List<SvgLaserSetting> laserSettings = new List<SvgLaserSetting>();
+		static List<SvgColorSetting> laserSettings = new List<SvgColorSetting>();
 		bool supportPWM = Settings.GetObject("Support Hardware PWM", true);
-
-		public ComboboxItem[] LaserOptions = new ComboboxItem[] { new ComboboxItem("M3 - Constant Power", "M3"), new ComboboxItem("M4 - Dynamic Power", "M4") };
 
 		public class ComboboxItem
 		{
@@ -49,7 +48,7 @@ namespace LaserGRBL.SvgConverter
                     Settings.SetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", f.IIBorderTracing.CurrentValue);
                     Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMax", f.IIMaxPower.CurrentValue);
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", f.IIMinPower.CurrentValue);
-					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", (f.CBLaserON.SelectedItem as ComboboxItem).Value);
+					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", (f.CBLaserON.SelectedItem as LaserMode).GCode);
 
 					core.LoadedFile.LoadImportedSVG(filename, append, core, laserSettings);
                 }
@@ -68,11 +67,15 @@ namespace LaserGRBL.SvgConverter
 			LblSmin.Visible = LblSmax.Visible = IIMaxPower.Visible = IIMinPower.Visible = BtnModulationInfo.Visible = supportPWM;
 			AssignMinMaxLimit();
 
-			CBLaserON.Items.Add(LaserOptions[0]);
-			CBLaserON.Items.Add(LaserOptions[1]);
+			CBLaserON.DataSource = LaserMode.LaserModes;
+			CBLaserON.ValueMember = "GCode";
+			CBLaserON.DisplayMember = "DisplayName";
 
+			cbLasermode.DataPropertyName = "LaserMode";
+			cbLasermode.ValueMember = "Self";
 			cbLasermode.DisplayMember = "DisplayName";
-			cbLasermode.Items.AddRange(LaserMode.LaserModes);
+			cbLasermode.ValueType = typeof(LaserMode);
+			cbLasermode.DataSource = new BindingSource(LaserMode.LaserModes, null);
 
 			LoadData(filename);
 		}
@@ -81,10 +84,118 @@ namespace LaserGRBL.SvgConverter
         {
 			GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
 			var colors = converter.getAllColorsInFile(filename).ToArray();
-			laserSettings = colors.Select(c => new SvgLaserSetting(c, mCore)).ToList();
-			dgvSettings.DataSource = laserSettings;
+			laserSettings = colors.Select(c => new SvgColorSetting(c, mCore)).ToList();
+			var boundList = new BindingList<SvgColorSetting>(laserSettings);
+			dgvSvgColorSettings.DataSource = boundList;
+
+            dgvSvgColorSettings.CellFormatting += DgvSvgColorSettings_CellFormatting;
+            dgvSvgColorSettings.CellMouseEnter += DgvSvgColorSettings_CellMouseEnter;
+            dgvSvgColorSettings.CellMouseLeave += DgvSvgColorSettings_CellMouseLeave;
+            dgvSvgColorSettings.CellClick += DgvSvgColorSettings_CellClick;
+            dgvSvgColorSettings.CellEnter += DgvSettings_CellEnter;
+			dgvSvgColorSettings.CellValueChanged += DgvSettings_CellValueChanged;
 		}
 
+		int hoveredMaterialDbBtnRow = -1;
+		int restoreMaterialDbBtnRow = -1;
+
+		private void DgvSvgColorSettings_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+		{
+			if (e.RowIndex > -1 && e.ColumnIndex == materialDbCol.Index)
+			{
+				hoveredMaterialDbBtnRow = e.RowIndex;
+				dgvSvgColorSettings.UpdateCellValue(e.ColumnIndex, e.RowIndex);
+			}
+		}
+
+		private void DgvSvgColorSettings_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+			if (e.RowIndex > -1 && e.ColumnIndex == materialDbCol.Index)
+			{
+				restoreMaterialDbBtnRow = hoveredMaterialDbBtnRow;
+				hoveredMaterialDbBtnRow = -1;
+				dgvSvgColorSettings.UpdateCellValue(e.ColumnIndex, e.RowIndex);
+			}
+		}
+
+		private void DgvSvgColorSettings_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+		{
+			if (hoveredMaterialDbBtnRow == e.RowIndex && e.ColumnIndex == materialDbCol.Index)
+			{
+				var highlightedImg = Base.Drawing.ImageTransform.Brightness(materialDbCol.Image, 0.11F);
+				e.Value = highlightedImg;
+			}
+			else if (restoreMaterialDbBtnRow == e.RowIndex && e.ColumnIndex == materialDbCol.Index)
+			{
+				e.Value = materialDbCol.Image;
+			}
+		}
+
+		private void DgvSvgColorSettings_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if(e.RowIndex < 0)
+            {
+				return;
+            }
+
+			if(e.ColumnIndex == materialDbCol.Index)
+            {
+				MaterialDB.MaterialsRow selectedMaterial = PSHelperForm.CreateAndShowDialog(this);
+				if (selectedMaterial != null)
+				{
+					var currentRow = laserSettings[e.RowIndex];
+					currentRow.Speed = selectedMaterial.Speed;
+					currentRow.SMax = IIMaxPower.MaxValue * selectedMaterial.Power / 100;
+					currentRow.Passes = selectedMaterial.Cycles;
+					updateDgvRow(e.RowIndex);
+				}
+			}
+        }
+
+		private void updateDgvRow(int rowIndex)
+        {
+			for(var i = 0; i < dgvSvgColorSettings.Columns.Count; i++)
+            {
+				dgvSvgColorSettings.UpdateCellValue(i, rowIndex);
+            }
+		}
+
+        private void DgvSettings_CellEnter(object sender, DataGridViewCellEventArgs e)
+		{
+			dgvSvgColorSettings.BeginEdit(false);
+
+			if (dgvSvgColorSettings.EditingControl is TextBoxBase)
+			{
+				TextBoxBase textBox = (TextBoxBase)dgvSvgColorSettings.EditingControl;
+
+				var pos = dgvSvgColorSettings.EditingControl.PointToClient(Cursor.Position);
+				var g = textBox.CreateGraphics();
+				var textWidth = (int)g.MeasureString(textBox.Text, textBox.Font).Width;
+
+				if (pos.X < textWidth)
+				{
+					textBox.SelectionStart = textBox.GetCharIndexFromPosition(dgvSvgColorSettings.EditingControl.PointToClient(Cursor.Position));
+				} else
+                {
+					textBox.SelectionStart = textBox.TextLength;
+				}
+				
+				
+			}
+			if (dgvSvgColorSettings.EditingControl is ComboBox)
+            {
+				ComboBox cb = (ComboBox)dgvSvgColorSettings.EditingControl;
+				cb.DroppedDown = true;
+            }
+		}
+
+		private void DgvSettings_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+		{
+			string colDataPropertyName = dgvSvgColorSettings.Columns[e.ColumnIndex].DataPropertyName;
+			if (colDataPropertyName == "SMin" || colDataPropertyName == "SMax") { 
+				dgvSvgColorSettings.UpdateCellValue(e.ColumnIndex + 1, e.RowIndex);
+			}
+        }
 
         private void AssignMinMaxLimit()
         { 
@@ -99,9 +210,9 @@ namespace LaserGRBL.SvgConverter
 			string LaserOn = Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", "M3");
 
 			if (LaserOn == "M3" || !mCore.Configuration.LaserMode)
-				CBLaserON.SelectedItem = LaserOptions[0];
+				CBLaserON.SelectedItem = LaserMode.LaserModes.Single(m => m.GCode == "M3");
 			else
-				CBLaserON.SelectedItem = LaserOptions[1];
+				CBLaserON.SelectedItem = LaserMode.LaserModes.Single(m => m.GCode == "M4");
 
 			string LaserOff = "M5"; //Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOff", "M5");
 

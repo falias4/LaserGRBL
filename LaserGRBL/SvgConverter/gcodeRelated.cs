@@ -84,7 +84,7 @@ namespace LaserGRBL.SvgConverter
 			lastx = -1; lasty = -1; lastz = 0; lasts = -1 ; lastg = -1;
 		}
 
-		public static void colorOverride(SvgLaserSetting setting)
+		public static void colorOverride(SvgColorSetting setting)
         {
 			gcodeXYFeed = setting.Speed;
 

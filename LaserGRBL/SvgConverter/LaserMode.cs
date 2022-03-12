@@ -13,6 +13,8 @@ namespace LaserGRBL.SvgConverter
         public string GCode { get; set; }
         public string DisplayName { get; set; }
 
+        public LaserMode Self { get { return this;  } }
+
         public LaserMode(string gcode, string displayName)
         {
             GCode = gcode;
