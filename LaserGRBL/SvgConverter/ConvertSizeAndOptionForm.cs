@@ -44,13 +44,16 @@ namespace LaserGRBL.SvgConverter
         {
             using (SvgToGCodeForm f = new SvgToGCodeForm(core, filename))
             {
-                f.ShowDialogForm(parent);
+                f.ShowDialog(parent);
                 if (f.DialogResult == DialogResult.OK)
                 {
+					// TODO FAL: Set default settings 
+					/*
                     Settings.SetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", f.IIBorderTracing.CurrentValue);
                     Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMax", f.IIMaxPower.CurrentValue);
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", f.IIMinPower.CurrentValue);
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", (f.CBLaserON.SelectedItem as LaserMode).GCode);
+					*/
 
 					core.LoadedFile.LoadImportedSVG(filename, append, core, laserSettings);
                 }
@@ -62,16 +65,12 @@ namespace LaserGRBL.SvgConverter
 			InitializeComponent();
 			mCore = core;
 
-			BackColor = ColorScheme.FormBackColor;
-			GbLaser.ForeColor = GbSpeed.ForeColor = ForeColor = ColorScheme.FormForeColor;
+			// TODO FAL Theme
+			BackColor = dgvSvgColorSettings.BackgroundColor = ColorScheme.FormBackColor;
+			ForeColor = ColorScheme.FormForeColor;
 			BtnCancel.BackColor = BtnCreate.BackColor = ColorScheme.FormButtonsColor;
 
-			LblSmin.Visible = LblSmax.Visible = IIMaxPower.Visible = IIMinPower.Visible = BtnModulationInfo.Visible = supportPWM;
-			AssignMinMaxLimit();
-
-			CBLaserON.DataSource = LaserMode.LaserModes;
-			CBLaserON.ValueMember = "GCode";
-			CBLaserON.DisplayMember = "DisplayName";
+			smin.Visible = sminPercentage.Visible = smax.Visible = smaxPercentage.Visible = supportPWM;
 
 			cbLasermode.DataPropertyName = "LaserMode";
 			cbLasermode.ValueMember = "Self";
@@ -90,18 +89,12 @@ namespace LaserGRBL.SvgConverter
 		{
 			GCodeFromSVG converter = new SvgConverter.GCodeFromSVG();
 			var colors = converter.getAllColorsInFile(filename).ToArray();
-
-			// Convert SvgDocument to Image
-			svgImages = converter.splitSvgByColor(filename, colors).Aggregate(new Dictionary<string, Image>(), (acc, svgByColor) =>
-			{
-				acc.Add(svgByColor.Key, svgByColor.Value.Draw());
-				return acc;
-			});
+			loadImagesFromSvg(converter, colors, filename);
 
 			laserSettings = colors.Select(c => new SvgColorSetting(c, mCore)).ToList();
 			var boundList = new BindingList<SvgColorSetting>(laserSettings);
 			dgvSvgColorSettings.DataSource = boundList;
-
+			
 			dgvSvgColorSettings.CellFormatting += DgvSvgColorSettings_CellFormatting;
 			dgvSvgColorSettings.CellMouseEnter += DgvSvgColorSettings_CellMouseEnter;
 			dgvSvgColorSettings.CellMouseLeave += DgvSvgColorSettings_CellMouseLeave;
@@ -113,6 +106,27 @@ namespace LaserGRBL.SvgConverter
 			dgvSvgColorSettings.CellMouseUp += (sender, e) => { dataGridMouseClicked = false; };
 
 			dgvSvgColorSettings.Rows[0].Selected = true;
+		}
+
+		private void loadImagesFromSvg(GCodeFromSVG converter, string[] colors, string filename)
+        {
+			svgImages = converter.splitSvgByColor(filename, colors).Aggregate(new Dictionary<string, Image>(), (acc, svgByColor) =>
+			{
+				var svg = svgByColor.Value;
+
+				// create a white bitmap
+				var svgDim = svg.GetDimensions();
+				Bitmap bmp = new Bitmap((int)svgDim.Width, (int)svgDim.Height);
+				using (Graphics g = Graphics.FromImage(bmp))
+				{
+					g.Clear(Color.White);
+				}
+
+				svgByColor.Value.Draw(bmp);
+				acc.Add(svgByColor.Key, bmp);
+
+				return acc;
+			});
 		}
 
         private void DgvSvgColorSettings_SelectionChanged(object sender, EventArgs e)
@@ -244,117 +258,27 @@ namespace LaserGRBL.SvgConverter
 			}
         }
 
-        private void AssignMinMaxLimit()
-        { 
-			IIBorderTracing.MaxValue = (int)mCore.Configuration.MaxRateX;
-			IIMaxPower.MaxValue = (int)mCore.Configuration.MaxPWM;
-		}
-
-		public void ShowDialogForm(Form parent)
+        private void linkLaserModes_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-			IIBorderTracing.CurrentValue = Settings.GetObject("GrayScaleConversion.VectorizeOptions.BorderSpeed", 1000);
+			 Tools.Utils.OpenLink(@"https://lasergrbl.com/usage/raster-image-import/target-image-size-and-laser-options/#laser-modes"); 
+		}
 
-			string LaserOn = Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", "M3");
-
-			if (LaserOn == "M3" || !mCore.Configuration.LaserMode)
-				CBLaserON.SelectedItem = LaserMode.LaserModes.Single(m => m.GCode == "M3");
-			else
-				CBLaserON.SelectedItem = LaserMode.LaserModes.Single(m => m.GCode == "M4");
-
-			string LaserOff = "M5"; //Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOff", "M5");
-
-			IIMinPower.CurrentValue = Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", 0);
-			IIMaxPower.CurrentValue = Settings.GetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMax", (int)mCore.Configuration.MaxPWM);
-
-			IIBorderTracing.Visible = LblBorderTracing.Visible = LblBorderTracingmm.Visible = true;
-
-			RefreshPerc();
-
-			ShowDialog(parent);
+        private void linkPowerModulation_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+			Tools.Utils.OpenLink(@"https://lasergrbl.com/usage/raster-image-import/target-image-size-and-laser-options/#power-modulation");
 		}
 
 
-		void IIBorderTracingCurrentValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
-		{
-			//IP.BorderSpeed = NewValue;
-		}
+        //private void IISizeW_OnTheFlyValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
+        //{
+        //	if (ByUser)
+        //		IISizeH.CurrentValue = IP.WidthToHeight(NewValue);
+        //}
 
-	
-		void IIMinPowerCurrentValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
-		{
-			if (ByUser && IIMaxPower.CurrentValue <= NewValue)
-				IIMaxPower.CurrentValue = NewValue + 1;
+        //private void IISizeH_OnTheFlyValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
+        //{
+        //	if (ByUser) IISizeW.CurrentValue = IP.HeightToWidht(NewValue);
+        //}
 
-			RefreshPerc();
-		}
-		void IIMaxPowerCurrentValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
-		{
-			if (ByUser && IIMinPower.CurrentValue >= NewValue)
-				IIMinPower.CurrentValue = NewValue - 1;
-
-			RefreshPerc();
-		}
-
-		private void RefreshPerc()
-		{
-			decimal maxpwm = mCore?.Configuration != null ? mCore.Configuration.MaxPWM : -1;
-
-			if (maxpwm > 0)
-			{
-				LblMaxPerc.Text = (IIMaxPower.CurrentValue / mCore.Configuration.MaxPWM).ToString("P1");
-				LblMinPerc.Text = (IIMinPower.CurrentValue / mCore.Configuration.MaxPWM).ToString("P1");
-			}
-			else
-			{
-				LblMaxPerc.Text = "";
-				LblMinPerc.Text = "";
-			}
-		}
-
-		private void BtnOnOffInfo_Click(object sender, EventArgs e)
-		{Tools.Utils.OpenLink(@"https://lasergrbl.com/usage/raster-image-import/target-image-size-and-laser-options/#laser-modes");}
-
-		private void BtnModulationInfo_Click(object sender, EventArgs e)
-		{Tools.Utils.OpenLink(@"https://lasergrbl.com/usage/raster-image-import/target-image-size-and-laser-options/#power-modulation");}
-
-		private void CBLaserON_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			ComboboxItem mode = CBLaserON.SelectedItem as ComboboxItem;
-
-			if (mode != null)
-			{
-				if (!mCore.Configuration.LaserMode && (mode.Value as string) == "M4")
-					MessageBox.Show(Strings.WarnWrongLaserMode, Strings.WarnWrongLaserModeTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);//warning!!
-			}
-
-		}
-
-
-
-		private void BtnPSHelper_Click(object sender, EventArgs e)
-		{
-			MaterialDB.MaterialsRow row = PSHelperForm.CreateAndShowDialog(this);
-			if (row != null)
-			{
-				if (IIBorderTracing.Visible)
-					IIBorderTracing.CurrentValue = row.Speed;
-				//if (IILinearFilling.Visible)
-				//	IILinearFilling.CurrentValue = row.Speed;
-
-				IIMaxPower.CurrentValue = IIMaxPower.MaxValue * row.Power / 100;
-			}
-		}
-
-		//private void IISizeW_OnTheFlyValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
-		//{
-		//	if (ByUser)
-		//		IISizeH.CurrentValue = IP.WidthToHeight(NewValue);
-		//}
-
-		//private void IISizeH_OnTheFlyValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
-		//{
-		//	if (ByUser) IISizeW.CurrentValue = IP.HeightToWidht(NewValue);
-		//}
-
-	}
+    }
 }

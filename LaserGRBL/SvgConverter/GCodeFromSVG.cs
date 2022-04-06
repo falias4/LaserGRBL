@@ -95,8 +95,8 @@ namespace LaserGRBL.SvgConverter
         {
 			string xmlContent = System.IO.File.ReadAllText(file);
 			XElement parsedSvg = parseText(xmlContent);
-			List<XElement> elementsWithStyleAttr = parsedSvg.XPathSelectElements("//*[@style]").ToList();
-			var colors = elementsWithStyleAttr.Select(e => getColor(e));
+			List<XElement> elementsWithPossibleColorSetting = parsedSvg.XPathSelectElements("//*[@style|@stroke|@fill]").ToList();
+			var colors = elementsWithPossibleColorSetting.Select(e => getColor(e));
 
 			colors = colors.Distinct().Where(c => !string.IsNullOrWhiteSpace(c));
 			return colors;
@@ -499,6 +499,7 @@ namespace LaserGRBL.SvgConverter
 
 		private string getColor(XElement pathElement)
 		{
+			var defaultColor = "#000000"; // default=black
 			if (pathElement.Attribute("style") != null)
 			{
 				var style = pathElement.Attribute("style").Value;
@@ -515,8 +516,19 @@ namespace LaserGRBL.SvgConverter
 						return fillMatch.Groups[1].Value;
 					}
 				}
-				return "000000"; // default=black;
+				return defaultColor;
 			}
+			else if (pathElement.Attribute("fill") != null)
+			{
+				var value = pathElement.Attribute("fill").Value;
+				return !value.StartsWith("url") ? value : defaultColor;
+			}
+			else if (pathElement.Attribute("stroke") != null)
+			{
+				var value = pathElement.Attribute("stroke").Value;
+				return !value.StartsWith("url") ? value : defaultColor;
+			}
+
 			return currentColor;
 		}
 
