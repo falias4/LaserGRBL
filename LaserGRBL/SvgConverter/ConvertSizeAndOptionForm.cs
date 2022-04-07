@@ -44,7 +44,7 @@ namespace LaserGRBL.SvgConverter
         {
             using (SvgToGCodeForm f = new SvgToGCodeForm(core, filename))
             {
-                f.ShowDialog(parent);
+				f.ShowDialog(parent);
                 if (f.DialogResult == DialogResult.OK)
                 {
 					// TODO FAL: Set default settings 
@@ -94,17 +94,6 @@ namespace LaserGRBL.SvgConverter
 			laserSettings = colors.Select(c => new SvgColorSetting(c, mCore)).ToList();
 			var boundList = new BindingList<SvgColorSetting>(laserSettings);
 			dgvSvgColorSettings.DataSource = boundList;
-			
-			dgvSvgColorSettings.CellFormatting += DgvSvgColorSettings_CellFormatting;
-			dgvSvgColorSettings.CellMouseEnter += DgvSvgColorSettings_CellMouseEnter;
-			dgvSvgColorSettings.CellMouseLeave += DgvSvgColorSettings_CellMouseLeave;
-			dgvSvgColorSettings.CellClick += DgvSvgColorSettings_CellClick;
-			dgvSvgColorSettings.CellEnter += DgvSettings_CellEnter;
-			dgvSvgColorSettings.CellValueChanged += DgvSettings_CellValueChanged;
-			dgvSvgColorSettings.SelectionChanged += DgvSvgColorSettings_SelectionChanged;
-			dgvSvgColorSettings.CellMouseDown += (sender, e) => { dataGridMouseClicked = true; };
-			dgvSvgColorSettings.CellMouseUp += (sender, e) => { dataGridMouseClicked = false; };
-
 			dgvSvgColorSettings.Rows[0].Selected = true;
 		}
 
@@ -215,15 +204,15 @@ namespace LaserGRBL.SvgConverter
             }
 		}
 
-        private void DgvSettings_CellEnter(object sender, DataGridViewCellEventArgs e)
+        private void DgvSettings_CellEnter(object sender, DataGridViewCellEventArgs e)	
 		{
 			if (dgvSvgColorSettings.Columns[e.ColumnIndex].ReadOnly && !dataGridMouseClicked)
 			{
-				SendKeys.Send("{TAB}");
+				SendKeys.Send("{TAB}");	
 				return;
-			}
+			}	
 
-			dgvSvgColorSettings.BeginEdit(false);
+			dgvSvgColorSettings.BeginEdit(false);	
 
 			if (dgvSvgColorSettings.EditingControl is TextBoxBase)
 			{
@@ -267,6 +256,19 @@ namespace LaserGRBL.SvgConverter
         {
 			Tools.Utils.OpenLink(@"https://lasergrbl.com/usage/raster-image-import/target-image-size-and-laser-options/#power-modulation");
 		}
+
+        private void SvgToGCodeForm_Load(object sender, EventArgs e)
+        {
+			dgvSvgColorSettings.CellFormatting += DgvSvgColorSettings_CellFormatting;
+			dgvSvgColorSettings.CellMouseEnter += DgvSvgColorSettings_CellMouseEnter;
+			dgvSvgColorSettings.CellMouseLeave += DgvSvgColorSettings_CellMouseLeave;
+			dgvSvgColorSettings.CellClick += DgvSvgColorSettings_CellClick;
+			dgvSvgColorSettings.CellValueChanged += DgvSettings_CellValueChanged;
+			dgvSvgColorSettings.SelectionChanged += DgvSvgColorSettings_SelectionChanged;
+			dgvSvgColorSettings.CellMouseDown += (dgvSender, dgvEventArgs) => { dataGridMouseClicked = true; };
+			dgvSvgColorSettings.CellMouseUp += (dgvSender, dgvEventArgs) => { dataGridMouseClicked = false; };
+			dgvSvgColorSettings.CellEnter += DgvSettings_CellEnter;
+        }
 
 
         //private void IISizeW_OnTheFlyValueChanged(object sender, int OldValue, int NewValue, bool ByUser)

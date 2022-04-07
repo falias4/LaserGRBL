@@ -659,9 +659,6 @@ Click for more information...</value>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
     <value>832, 556</value>
   </data>
-  <data name="$this.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
   <data name="$this.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>4, 4, 4, 4</value>
   </data>
@@ -670,12 +667,6 @@ Click for more information...</value>
   </data>
   <data name="$this.Text" xml:space="preserve">
     <value>Target image</value>
-  </data>
-  <data name="&gt;&gt;TT.Name" xml:space="preserve">
-    <value>TT</value>
-  </data>
-  <data name="&gt;&gt;TT.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;colorSvgRef.Name" xml:space="preserve">
     <value>colorSvgRef</value>
@@ -742,6 +733,12 @@ Click for more information...</value>
   </data>
   <data name="&gt;&gt;materialDbCol.Type" xml:space="preserve">
     <value>System.Windows.Forms.DataGridViewImageColumn, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;TT.Name" xml:space="preserve">
+    <value>TT</value>
+  </data>
+  <data name="&gt;&gt;TT.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>SvgToGCodeForm</value>

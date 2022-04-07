@@ -95,8 +95,8 @@ namespace LaserGRBL.SvgConverter
         {
 			string xmlContent = System.IO.File.ReadAllText(file);
 			XElement parsedSvg = parseText(xmlContent);
-			List<XElement> elementsWithPossibleColorSetting = parsedSvg.XPathSelectElements("//*[@style|@stroke|@fill]").ToList();
-			var colors = elementsWithPossibleColorSetting.Select(e => getColor(e));
+			List<XElement> elementsWithPossibleColor = parsedSvg.XPathSelectElements("//*[@style|@stroke|@fill]").ToList();
+			var colors = elementsWithPossibleColor.Select(e => getColor(e));
 
 			colors = colors.Distinct().Where(c => !string.IsNullOrWhiteSpace(c));
 			return colors;
@@ -114,9 +114,10 @@ namespace LaserGRBL.SvgConverter
 			{
 				// create clone of SVG for each color
 				XElement svgCopy = new XElement(parsedSvg);
-				List<XElement> elementsWithStyleAttr = svgCopy.XPathSelectElements("//*[@style]").ToList();
+				// TODO FAL: improvement as it's always the same?
+				List<XElement> elementsWithPossibleColor = svgCopy.XPathSelectElements("//*[@style|@stroke|@fill]").ToList();
 
-				foreach (var element in elementsWithStyleAttr)
+				foreach (var element in elementsWithPossibleColor)
 				{
 					var elColor = getColor(element);
 
@@ -500,36 +501,67 @@ namespace LaserGRBL.SvgConverter
 		private string getColor(XElement pathElement)
 		{
 			var defaultColor = "#000000"; // default=black
+			string foundColorVal = null;
 			if (pathElement.Attribute("style") != null)
 			{
 				var style = pathElement.Attribute("style").Value;
-				var strokeMatch = Regex.Match(style, @"stroke:(#[0-9a-fA-F]+)(;|$)");
+				var strokeMatch = Regex.Match(style, @"stroke:(?!none|transparent|url)(.+?)(;|$)");
 				if (strokeMatch.Success)
 				{
-					return strokeMatch.Groups[1].Value;
+					foundColorVal = strokeMatch.Groups[1].Value;
 				}
 				else
 				{
-					var fillMatch = Regex.Match(style, @"fill:(#[0-9a-fA-F]+)(;|$)");
+					var fillMatch = Regex.Match(style, @"fill:(?!none|transparent|url)(.+?)(;|$)");
 					if (fillMatch.Success)
 					{
-						return fillMatch.Groups[1].Value;
+						foundColorVal = fillMatch.Groups[1].Value;
 					}
 				}
-				return defaultColor;
-			}
-			else if (pathElement.Attribute("fill") != null)
-			{
-				var value = pathElement.Attribute("fill").Value;
-				return !value.StartsWith("url") ? value : defaultColor;
-			}
-			else if (pathElement.Attribute("stroke") != null)
-			{
-				var value = pathElement.Attribute("stroke").Value;
-				return !value.StartsWith("url") ? value : defaultColor;
 			}
 
-			return currentColor;
+			if (foundColorVal == null)
+			{
+				if (pathElement.Attribute("fill") != null)
+				{
+					foundColorVal = pathElement.Attribute("fill").Value;
+				}
+				else if (pathElement.Attribute("stroke") != null)
+				{
+					foundColorVal = pathElement.Attribute("stroke").Value;
+				}
+			}
+
+			if (foundColorVal != null)
+			{
+				string colorAsHex = convertSvgColorToHex(foundColorVal);
+
+				return colorAsHex ?? defaultColor;
+			}
+			else
+			{
+				return currentColor;
+			}
+		}
+
+		private string convertSvgColorToHex(string svgColor)
+		{
+			if(svgColor.StartsWith("#") && svgColor.Length == 9)
+            {
+				svgColor = svgColor.Substring(0, 7);			
+            }
+
+			try
+			{
+				var colorConverter = new SvgColourConverter();
+				var convertedObj = colorConverter.ConvertFromString(svgColor);
+				var convertedString = colorConverter.ConvertToString(convertedObj);
+				return convertedString;
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		private string getColorOld(XElement pathElement)

@@ -56,25 +56,11 @@ namespace LaserGRBL.SvgConverter
             return _maxpwm > 0 ? (power / _maxpwm).ToString("P1") : "-";
         }
 
-        private string findKnownColorName(Color color)
-        {
-            var knownColors = Enum.GetValues(typeof(KnownColor));
-            foreach (int knownColor in knownColors)
-            {
-                var currColor = Color.FromKnownColor((KnownColor)knownColor);
-                if (currColor.ToArgb() == color.ToArgb())
-                {
-                    return currColor.Name;
-                }
-            }
-            return color.Name;
-        }
-
         private Bitmap createBitmapFromColor(Color color, int width, int height)
         {
             var colorBmp = new Bitmap(width, height);
             Graphics g = Graphics.FromImage(colorBmp);
-            g.Clear(color);
+            g.Clear(color);         
             return colorBmp;
         }
     }

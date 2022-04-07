@@ -47,15 +47,6 @@ namespace LaserGRBL.SvgConverter
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tableMain = new System.Windows.Forms.TableLayoutPanel();
             this.dgvSvgColorSettings = new System.Windows.Forms.DataGridView();
-            this.tableBottomRow = new System.Windows.Forms.TableLayoutPanel();
-            this.pbSvgPreview = new System.Windows.Forms.PictureBox();
-            this.BtnCreate = new System.Windows.Forms.Button();
-            this.BtnCancel = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.linkPowerModulation = new System.Windows.Forms.LinkLabel();
-            this.linkLaserModes = new System.Windows.Forms.LinkLabel();
-            this.TT = new System.Windows.Forms.ToolTip(this.components);
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.colorSvgRef = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colorCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ColorVi = new System.Windows.Forms.DataGridViewImageColumn();
@@ -67,12 +58,21 @@ namespace LaserGRBL.SvgConverter
             this.smaxPercentage = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.passes = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.materialDbCol = new System.Windows.Forms.DataGridViewImageColumn();
+            this.tableBottomRow = new System.Windows.Forms.TableLayoutPanel();
+            this.pbSvgPreview = new System.Windows.Forms.PictureBox();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.linkPowerModulation = new System.Windows.Forms.LinkLabel();
+            this.linkLaserModes = new System.Windows.Forms.LinkLabel();
+            this.BtnCreate = new System.Windows.Forms.Button();
+            this.BtnCancel = new System.Windows.Forms.Button();
+            this.TT = new System.Windows.Forms.ToolTip(this.components);
             this.tableMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvSvgColorSettings)).BeginInit();
             this.tableBottomRow.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbSvgPreview)).BeginInit();
-            this.groupBox1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableMain
@@ -104,73 +104,6 @@ namespace LaserGRBL.SvgConverter
             resources.ApplyResources(this.dgvSvgColorSettings, "dgvSvgColorSettings");
             this.dgvSvgColorSettings.MultiSelect = false;
             this.dgvSvgColorSettings.Name = "dgvSvgColorSettings";
-            // 
-            // tableBottomRow
-            // 
-            resources.ApplyResources(this.tableBottomRow, "tableBottomRow");
-            this.tableBottomRow.Controls.Add(this.pbSvgPreview, 0, 0);
-            this.tableBottomRow.Controls.Add(this.tableLayoutPanel1, 1, 0);
-            this.tableBottomRow.Name = "tableBottomRow";
-            // 
-            // pbSvgPreview
-            // 
-            this.pbSvgPreview.BackColor = System.Drawing.SystemColors.Control;
-            resources.ApplyResources(this.pbSvgPreview, "pbSvgPreview");
-            this.pbSvgPreview.Name = "pbSvgPreview";
-            this.pbSvgPreview.TabStop = false;
-            // 
-            // BtnCreate
-            // 
-            resources.ApplyResources(this.BtnCreate, "BtnCreate");
-            this.BtnCreate.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.BtnCreate.Name = "BtnCreate";
-            this.BtnCreate.UseVisualStyleBackColor = true;
-            // 
-            // BtnCancel
-            // 
-            resources.ApplyResources(this.BtnCancel, "BtnCancel");
-            this.BtnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.BtnCancel.Name = "BtnCancel";
-            this.BtnCancel.UseVisualStyleBackColor = true;
-            // 
-            // groupBox1
-            // 
-            this.tableLayoutPanel1.SetColumnSpan(this.groupBox1, 2);
-            this.groupBox1.Controls.Add(this.linkPowerModulation);
-            this.groupBox1.Controls.Add(this.linkLaserModes);
-            resources.ApplyResources(this.groupBox1, "groupBox1");
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.TabStop = false;
-            // 
-            // linkPowerModulation
-            // 
-            resources.ApplyResources(this.linkPowerModulation, "linkPowerModulation");
-            this.linkPowerModulation.Name = "linkPowerModulation";
-            this.linkPowerModulation.TabStop = true;
-            this.TT.SetToolTip(this.linkPowerModulation, resources.GetString("linkPowerModulation.ToolTip"));
-            this.linkPowerModulation.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkPowerModulation_LinkClicked);
-            // 
-            // linkLaserModes
-            // 
-            resources.ApplyResources(this.linkLaserModes, "linkLaserModes");
-            this.linkLaserModes.Name = "linkLaserModes";
-            this.linkLaserModes.TabStop = true;
-            this.TT.SetToolTip(this.linkLaserModes, resources.GetString("linkLaserModes.ToolTip"));
-            this.linkLaserModes.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLaserModes_LinkClicked);
-            // 
-            // TT
-            // 
-            this.TT.AutoPopDelay = 10000;
-            this.TT.InitialDelay = 500;
-            this.TT.ReshowDelay = 100;
-            // 
-            // tableLayoutPanel1
-            // 
-            resources.ApplyResources(this.tableLayoutPanel1, "tableLayoutPanel1");
-            this.tableLayoutPanel1.Controls.Add(this.BtnCreate, 1, 1);
-            this.tableLayoutPanel1.Controls.Add(this.BtnCancel, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.groupBox1, 0, 0);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             // 
             // colorSvgRef
             // 
@@ -264,6 +197,73 @@ namespace LaserGRBL.SvgConverter
             this.materialDbCol.Name = "materialDbCol";
             this.materialDbCol.ReadOnly = true;
             // 
+            // tableBottomRow
+            // 
+            resources.ApplyResources(this.tableBottomRow, "tableBottomRow");
+            this.tableBottomRow.Controls.Add(this.pbSvgPreview, 0, 0);
+            this.tableBottomRow.Controls.Add(this.tableLayoutPanel1, 1, 0);
+            this.tableBottomRow.Name = "tableBottomRow";
+            // 
+            // pbSvgPreview
+            // 
+            this.pbSvgPreview.BackColor = System.Drawing.SystemColors.Control;
+            resources.ApplyResources(this.pbSvgPreview, "pbSvgPreview");
+            this.pbSvgPreview.Name = "pbSvgPreview";
+            this.pbSvgPreview.TabStop = false;
+            // 
+            // tableLayoutPanel1
+            // 
+            resources.ApplyResources(this.tableLayoutPanel1, "tableLayoutPanel1");
+            this.tableLayoutPanel1.Controls.Add(this.BtnCreate, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.BtnCancel, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.groupBox1, 0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            // 
+            // groupBox1
+            // 
+            this.tableLayoutPanel1.SetColumnSpan(this.groupBox1, 2);
+            this.groupBox1.Controls.Add(this.linkPowerModulation);
+            this.groupBox1.Controls.Add(this.linkLaserModes);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // linkPowerModulation
+            // 
+            resources.ApplyResources(this.linkPowerModulation, "linkPowerModulation");
+            this.linkPowerModulation.Name = "linkPowerModulation";
+            this.linkPowerModulation.TabStop = true;
+            this.TT.SetToolTip(this.linkPowerModulation, resources.GetString("linkPowerModulation.ToolTip"));
+            this.linkPowerModulation.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkPowerModulation_LinkClicked);
+            // 
+            // linkLaserModes
+            // 
+            resources.ApplyResources(this.linkLaserModes, "linkLaserModes");
+            this.linkLaserModes.Name = "linkLaserModes";
+            this.linkLaserModes.TabStop = true;
+            this.TT.SetToolTip(this.linkLaserModes, resources.GetString("linkLaserModes.ToolTip"));
+            this.linkLaserModes.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLaserModes_LinkClicked);
+            // 
+            // BtnCreate
+            // 
+            resources.ApplyResources(this.BtnCreate, "BtnCreate");
+            this.BtnCreate.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.BtnCreate.Name = "BtnCreate";
+            this.BtnCreate.UseVisualStyleBackColor = true;
+            // 
+            // BtnCancel
+            // 
+            resources.ApplyResources(this.BtnCancel, "BtnCancel");
+            this.BtnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.BtnCancel.Name = "BtnCancel";
+            this.BtnCancel.UseVisualStyleBackColor = true;
+            // 
+            // TT
+            // 
+            this.TT.AutoPopDelay = 10000;
+            this.TT.InitialDelay = 500;
+            this.TT.ReshowDelay = 100;
+            // 
             // SvgToGCodeForm
             // 
             resources.ApplyResources(this, "$this");
@@ -272,13 +272,14 @@ namespace LaserGRBL.SvgConverter
             this.Controls.Add(this.tableMain);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "SvgToGCodeForm";
+            this.Load += new System.EventHandler(this.SvgToGCodeForm_Load);
             this.tableMain.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvSvgColorSettings)).EndInit();
             this.tableBottomRow.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pbSvgPreview)).EndInit();
+            this.tableLayoutPanel1.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
-            this.tableLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
