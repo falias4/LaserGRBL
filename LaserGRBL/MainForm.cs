@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Windows.Threading;
 using Tools;
@@ -678,6 +680,9 @@ namespace LaserGRBL
 		private void fileToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
 		{
 			MnReOpenFile.Enabled = Core.CanReOpenFile;
+			bool clipboardContainsImage = Clipboard.ContainsImage();
+			MnClipboardOpen.Enabled = clipboardContainsImage;
+			MnClipboardAppend.Enabled = clipboardContainsImage;
 		}
 
 		private void MnHotkeys_Click(object sender, EventArgs e)
@@ -784,7 +789,11 @@ namespace LaserGRBL
 		{
 			if (droppedFile == null)
 			{
-				if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
+				e.Effect = DragDropEffects.Copy;
+				if (e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(DataFormats.Html))
+				{
+					e.Effect = DragDropEffects.Copy;
+				}
 			}
 		}
 
@@ -792,11 +801,10 @@ namespace LaserGRBL
 		{
 			if (droppedFile == null)
 			{
-				string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-				if (files.Length == 1)
-				{
-					droppedFile = files[0];
+				droppedFile = ImportHelper.GetFileFromDropEvent(e.Data);
 
+				if (droppedFile != null)
+				{
 					// call via DispatcherTimer to unblock the source of the drag-event (e.g. Explorer-Window)
 					if (dropDispatcherTimer == null)
 					{
@@ -993,10 +1001,28 @@ namespace LaserGRBL
 		{
 			ShowWiFiConfig();
 		}
-	}
+
+		private void MnClipboardOpen_Click(object sender, EventArgs e)
+		{
+			string path = ImportHelper.GetImageFileFromClipboard();
+			if (path != null)
+			{
+				Core.OpenFile(this, path);
+			}
+		}
+
+		private void MnClipboardAppend_Click(object sender, EventArgs e)
+		{
+			string path = ImportHelper.GetImageFileFromClipboard();
+			if (path != null)
+			{
+				Core.OpenFile(this, path, true);
+			}
+		}
+    }
 
 
-	public class MMnRenderer : ToolStripProfessionalRenderer
+    public class MMnRenderer : ToolStripProfessionalRenderer
 	{
 		public MMnRenderer() : base(new CustomMenuColor()) { }
 
