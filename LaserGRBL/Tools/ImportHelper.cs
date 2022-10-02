@@ -29,17 +29,23 @@ namespace Tools
 
         public static string GetImageFileFromClipboard()
         {
-            Image img = Clipboard.GetImage();
-            if (img == null)
+            if (Clipboard.ContainsImage())
             {
-                return null;
+                Image img = Clipboard.GetImage();
+
+                if (!Directory.Exists(_tempImageDir)) Directory.CreateDirectory(_tempImageDir);
+                string path = Path.Combine(_tempImageDir, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+                path += ".png";
+                img.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+                return path;
+            }
+            else if (Clipboard.ContainsFileDropList())
+            {
+                var files = Clipboard.GetFileDropList();
+                return files[0];
             }
 
-            if (!Directory.Exists(_tempImageDir)) Directory.CreateDirectory(_tempImageDir);
-            string path = Path.Combine(_tempImageDir, DateTime.Now.ToString("yyyyMMddHHmmssffff"));
-            path += ".png";
-            img.Save(path, System.Drawing.Imaging.ImageFormat.Png);
-            return path;
+            return null;
         }
 
         public static void cleanupTempDir()

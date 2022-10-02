@@ -314,7 +314,7 @@ namespace LaserGRBL
             else
                 TTLEstimated.Text = Strings.MainFormEstimatedTime;
 
-            MnFileOpen.Enabled = Core.CanLoadNewFile;
+            MnFileOpen.Enabled = BtnFileOpen.Enabled = Core.CanLoadNewFile;
             MnSaveProject.Enabled = MnAdvancedSave.Enabled = MnSaveProgram.Enabled = Core.HasProgram;
             MnFileSend.Enabled = Core.CanSendFile;
             MnStartFromPosition.Enabled = Core.CanSendFile;
@@ -994,6 +994,15 @@ namespace LaserGRBL
         private void MnConfigureOrturWiFi_Click(object sender, EventArgs e)
         {
             ShowWiFiConfig();
+        }
+
+        private void BtnOpenClipboard_Click(object sender, EventArgs e)
+        {
+            string file = ImportHelper.GetImageFileFromClipboard();
+            if(file != null)
+            {
+                Core.OpenFile(this, file);
+            }
         }
     }
 
