@@ -65,7 +65,7 @@ namespace LaserGRBL.SvgConverter
 		private bool importInMM = false;
 		//private bool fromText = false;
 
-		Regex RemoveInvalidUnicode = new Regex(@"[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u10000-u10FFFF]+", RegexOptions.Compiled);
+		public static Regex RemoveInvalidUnicode = new Regex(@"[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u10000-u10FFFF]+", RegexOptions.Compiled);
 		public string convertFromText(string text, GrblCore core, bool importMM = false)
 		{
 			//fromText = true;
@@ -384,7 +384,7 @@ namespace LaserGRBL.SvgConverter
 			return source.Substring(start, source.Length - start - 1);
 		}
 
-		private static float ConvertToPixel(string str, float ext = 1)        // return value in px
+		public static float ConvertToPixel(string str, float ext = 1)        // return value in px
 		{       // https://www.w3.org/TR/SVG/coords.html#Units          // in=90 or 96 ???
 			bool percent = false;
 			//       Logger.Trace( "convert to pixel in {0}", str);

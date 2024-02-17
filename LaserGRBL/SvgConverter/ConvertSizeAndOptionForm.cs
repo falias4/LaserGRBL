@@ -5,9 +5,13 @@
 // You should have received a copy of the GPLv3 General Public License  along with this program; if not, write to the Free Software  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,  USA. using System;
 
 using LaserGRBL.PSHelper;
+using Svg;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
+using System.Xml.Linq;
+using System.IO;
 
 namespace LaserGRBL.SvgConverter
 {
@@ -18,6 +22,8 @@ namespace LaserGRBL.SvgConverter
 	{
 		GrblCore mCore;
 		bool supportPWM = Settings.GetObject("Support Hardware PWM", true);
+		string finalFilename = null;
+		private XElement svgCode;
 
 		public ComboboxItem[] LaserOptions = new ComboboxItem[] { new ComboboxItem("M3 - Constant Power", "M3"), new ComboboxItem("M4 - Dynamic Power", "M4") };
 		public class ComboboxItem
@@ -38,6 +44,7 @@ namespace LaserGRBL.SvgConverter
         {
             using (SvgToGCodeForm f = new SvgToGCodeForm(core, filename, append))
             {
+				f.finalFilename = filename;
                 f.ShowDialogForm(parent);
                 if (f.DialogResult == DialogResult.OK)
                 {
@@ -46,7 +53,7 @@ namespace LaserGRBL.SvgConverter
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.PowerMin", f.IIMinPower.CurrentValue);
 					Settings.SetObject("GrayScaleConversion.Gcode.LaserOptions.LaserOn", (f.CBLaserON.SelectedItem as ComboboxItem).Value);
 
-					core.LoadedFile.LoadImportedSVG(filename, append, core);
+					core.LoadedFile.LoadImportedSVG(f.finalFilename, append, core);
                 }
             }
         }
@@ -65,7 +72,16 @@ namespace LaserGRBL.SvgConverter
 
 			CBLaserON.Items.Add(LaserOptions[0]);
 			CBLaserON.Items.Add(LaserOptions[1]);
-		}
+
+            string xmlText = System.IO.File.ReadAllText(finalFilename);
+            xmlText = GCodeFromSVG.RemoveInvalidUnicode.Replace(xmlText, string.Empty);
+            svgCode = XElement.Parse(xmlText, LoadOptions.None);
+			var width = svgCode.Attribute("width").ToString();
+            var height = svgCode.Attribute("height").ToString();
+
+			GCodeFromSVG.ConvertToPixel(width);
+            GCodeFromSVG.ConvertToPixel(height);
+        }
 
 		private void AssignMinMaxLimit()
         { 
@@ -167,6 +183,28 @@ namespace LaserGRBL.SvgConverter
 				IIMaxPower.CurrentValue = IIMaxPower.MaxValue * row.Power / 100;
 			}
 		}
+
+		private void CbAutosize_CheckedChanged(object sender, EventArgs e)
+		{
+		
+		}
+
+		private void BtnCreate_Click(object sender, EventArgs e)
+		{
+			if(CbAutosize.Checked)
+			{
+				// no further action required (close dialog with DialogResult)
+				return;
+			}
+			
+			svgCode.SetAttributeValue("width", "112mm");
+            svgCode.SetAttributeValue("height", "112mm");
+
+
+			var tempFile = Path.Combine(System.IO.Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(finalFilename)}_resized.svg");
+			svgCode.Save(tempFile);
+			finalFilename = tempFile;
+        }
 
 		//private void IISizeW_OnTheFlyValueChanged(object sender, int OldValue, int NewValue, bool ByUser)
 		//{
